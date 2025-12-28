@@ -16,7 +16,7 @@ function Navbar() {
       </Link>
       <div>
         <Button asChild>
-          <Link href="/signin">Sign in</Link>
+          <Link href="/sign-in">Sign in</Link>
         </Button>
       </div>
     </nav>
