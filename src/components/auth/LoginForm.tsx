@@ -2,53 +2,50 @@
 
 import * as z from "zod"
 import Link from "next/link"
-import { zodResolver } from "@hookform/resolvers/zod"
+import { loginSchema } from "@/lib/zod/login"
 import { Controller, useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { signIn } from "next-auth/react"
 import { Field, FieldError, FieldGroup, FieldLabel } from "../ui/field"
-import { registerSchema } from "@/lib/zod/register"
 import { Input } from "../ui/input"
 import { Button } from "../ui/button"
-import { toast } from "sonner"
-import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { LucideEye, LucideEyeOff } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+import { FcGoogle } from "react-icons/fc"
 
-export function RegisterForm() {
+export function LoginForm() {
   const [showPass, setShowPass] = useState(false)
   const router = useRouter()
-  const form = useForm<z.infer<typeof registerSchema>>({
-    resolver: zodResolver(registerSchema),
+
+  const form = useForm<z.infer<typeof loginSchema>>({
+    resolver: zodResolver(loginSchema),
     mode: "onChange",
     defaultValues: {
-      name: "",
       email: "",
       password: "",
     }
   })
 
-  async function onSubmit(data: z.infer<typeof registerSchema>) {
-    try {
-      const res = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+  async function onSubmit(data: z.infer<typeof loginSchema>) {
+    const res = await signIn("credentials", {
+      ...data,
+      redirect: false
+    })
+  
+    if (res?.error) {
+      toast.error("Invalid credentials", {
+        description: "Check your email and password"
       })
-
-      const result = await res.json()
-
-      if (!res.ok) {
-        throw new Error(result.error || "Register failed")
-      }
-
-      toast.success("Account created")
-      form.reset()
-
-      router.push("/login")
-    } catch (err) {
-      toast.error("Sign up failed")
+      return
     }
+
+    toast.success("Sign in success")
+    router.push("/dashboard")
   }
-  return(
+
+  return (
     <>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
@@ -56,19 +53,17 @@ export function RegisterForm() {
       >
         <FieldGroup className="flex flex-col gap-5">
           <Controller
-            name="name"
+            name="email"
             control={form.control}
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor="name" className="ml-1">
-                  Name
-                </FieldLabel>
+                <FieldLabel htmlFor="email" className="ml-1">Email</FieldLabel>
                 <div className="flex flex-col gap-1.5">
                   <Input
                     {...field}
-                    id="name"
+                    id="email"
                     aria-invalid={fieldState.invalid}
-                    placeholder="john doe"
+                    placeholder="notyourdad@example.com"
                     autoComplete="off"
                   />
                   {fieldState.invalid && (
@@ -78,39 +73,12 @@ export function RegisterForm() {
               </Field>
             )}
           />
-      
-          <Controller
-            name="email"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor="email" className="ml-1">
-                  Email
-                </FieldLabel>
-                <div className="flex flex-col gap-1.5">
-                  <Input
-                    {...field}
-                    id="email"
-                    aria-invalid={fieldState.invalid}
-                    placeholder="example@gmail.com"
-                    autoCapitalize="off"
-                  />
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} className="ml-1" />
-                  )}
-                </div>
-              </Field>
-            )}
-          />
-      
           <Controller
             name="password"
             control={form.control}
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor="password" className="ml-1">
-                  Password
-                </FieldLabel>
+                <FieldLabel htmlFor="password" className="ml-1">Password</FieldLabel>
                 <div className="flex flex-col gap-1.5">
                   <div className="flex gap-3">
                     <Input
@@ -138,17 +106,28 @@ export function RegisterForm() {
             )}
           />
         </FieldGroup>
-        <div className="flex flex-col gap-3 text-center">
+        <div className="flex flex-col gap-4 text-center">
           <small className="text-muted-foreground">
-            Already have an account?{" "}
-            <Link
-              href="/login"
-              className="font-semibold text-foreground hover:underline"
-            >
-              Sign in
-            </Link>
+            Don&apos;t have an account? {""}
+              <Link href="/register" className="font-semibold text-foreground hover:underline">Create one</Link>
           </small>
-          <Button type="submit">Sign up</Button>
+          <Button type="submit">
+            Sign in
+          </Button>
+          <div className="flex items-center gap-3">
+            <span className="flex-1 h-px bg-border" />
+            <small className="text-muted-foreground">or</small>
+            <span className="flex-1 h-px bg-border" />
+          </div>
+          <Button 
+            type="button"
+            variant="outline"
+            onClick={() => signIn("google")}
+            className="flex items-center gap-2"
+          >
+            <FcGoogle />
+            Sign in with Google
+          </Button>
         </div>
       </form>
     </>

@@ -4,19 +4,23 @@ import { Button } from "@/components/ui/button"
 
 function Navbar() {
   return (
-    <nav>
-      <Link href="/">
+    <nav className="flex justify-between items-center p-6">
+      <Link href="/" className="flex items-center gap-4">
         <Image
           src="/placeholder.svg"
           alt="Noto logo"
           width={32}
           height={32} 
         />
-        <span>Noto</span>
+        <span>
+          <strong>
+            Noto
+          </strong>
+        </span>
       </Link>
       <div>
-        <Button asChild>
-          <Link href="/sign-in">Sign in</Link>
+        <Button asChild size="lg">
+          <Link href="/login">Sign in</Link>
         </Button>
       </div>
     </nav>

@@ -477,18 +477,6 @@ export type EnumContentTypeFieldUpdateOperationsInput = {
   set?: $Enums.ContentType
 }
 
-export type NullableStringFieldUpdateOperationsInput = {
-  set?: string | null
-}
-
-export type NullableIntFieldUpdateOperationsInput = {
-  set?: number | null
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type BookmarkCreateNestedManyWithoutFlashcardSetInput = {
   create?: Prisma.XOR<Prisma.BookmarkCreateWithoutFlashcardSetInput, Prisma.BookmarkUncheckedCreateWithoutFlashcardSetInput> | Prisma.BookmarkCreateWithoutFlashcardSetInput[] | Prisma.BookmarkUncheckedCreateWithoutFlashcardSetInput[]
   connectOrCreate?: Prisma.BookmarkCreateOrConnectWithoutFlashcardSetInput | Prisma.BookmarkCreateOrConnectWithoutFlashcardSetInput[]
