@@ -12,10 +12,8 @@ function Navbar() {
           width={32}
           height={32} 
         />
-        <span>
-          <strong>
-            Noto
-          </strong>
+        <span className="font-semibold">
+          Noto
         </span>
       </Link>
       <div>
