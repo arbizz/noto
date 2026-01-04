@@ -6,7 +6,10 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(req: NextRequest) {
   try {
     const session = await auth()
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!session?.user) return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    )
   
     const userId = Number(session.user.id)
     const searchParams = req.nextUrl.searchParams
@@ -55,4 +58,72 @@ export async function GET(req: NextRequest) {
     console.error(err);
     return NextResponse.json({ error: "Server error" }, { status: 500 })
   }   
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const session = await auth()
+    if (!session?.user) return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    )
+
+    const userId = Number(session.user.id)
+
+    const body = await req.json()
+    const { title, description, content, visibility, category } = body
+
+    if (!title || !content) {
+      return NextResponse.json(
+        { message: "" },
+        { status: 400 },
+      )
+    }
+
+    if (category === "") {
+      const { id } = await prisma.note.create({
+        data: {
+          userId,
+          title,
+          description,
+          content,
+          visibility,
+          category: "other",
+        },
+        select: {
+          id: true,
+        }
+      })
+
+      return NextResponse.json(
+        { message: "Note Created", id: id },
+        { status: 201 }
+      )
+    }
+
+    const { id } = await prisma.note.create({
+      data: {
+        userId,
+        title,
+        description,
+        content,
+        visibility,
+        category,
+      },
+      select: {
+        id: true,
+      }
+    })
+
+    return NextResponse.json(
+      { message: "Note Created", id: id },
+      { status: 201 }
+    )
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json(
+      { error: "Server error" },
+      { status: 500 }
+    )
+  }
 }

@@ -21,7 +21,7 @@ function UserSidebar() {
               href="/dashboard"
               className="absolute top-3 left-3 p-2 size-fit rounded-sm hover:bg-sidebar-accent"
             >
-              <Image src="placeholder.svg" alt="Noto logo" width={24} height={24} />
+              <Image src="/placeholder.svg" alt="Noto logo" width={24} height={24} />
             </Link>
             <Button
               variant="ghost"
