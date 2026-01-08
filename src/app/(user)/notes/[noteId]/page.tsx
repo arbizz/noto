@@ -1,38 +1,63 @@
 "use client"
 
+import { useEffect, useState } from "react"
+import { useParams, useRouter } from "next/navigation"
+import { JSONContent } from "@tiptap/react"
+import { toast } from "sonner"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from "@/components/ui/radio-group"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { TiptapEditor } from "@/components/user/TiptapEditor"
+
 import { categories } from "@/data/user"
-import { ContentCategory, Note, Visibility } from "@/generated/prisma/client"
+import {
+  ContentCategory,
+  Note,
+  Visibility,
+} from "@/generated/prisma/client"
 import { compareProseMirrorJSON } from "@/lib/tiptap"
-import { JSONContent } from "@tiptap/react"
-import { useParams, useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
-import { toast } from "sonner"
 
 export default function NotePage() {
   const { noteId: id } = useParams()
   const router = useRouter()
+
   const noteId = Array.isArray(id) ? id[0] : id
 
   const [note, setNote] = useState<Note | undefined>()
+
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
-  const [category, setCategory] = useState<ContentCategory | undefined>()
-  const [visibility, setVisibility] = useState<Visibility>("private")
-  const [content, setContent] = useState<JSONContent>()
+  const [category, setCategory] =
+    useState<ContentCategory | undefined>()
+  const [visibility, setVisibility] =
+    useState<Visibility>("private")
+  const [content, setContent] =
+    useState<JSONContent>()
 
-  const [initialTitle, setInitialTitle] = useState("")
-  const [initialDescription, setInitialDescription] = useState("")
-  const [initialCategory, setInitialCategory] = useState<ContentCategory | undefined>()
-  const [initialVisibility, setInitialVisibility] = useState<Visibility>("private")
-  const [initialContent, setInitialContent] = useState<JSONContent>()
-  
+  const [initialTitle, setInitialTitle] =
+    useState("")
+  const [initialDescription, setInitialDescription] =
+    useState("")
+  const [initialCategory, setInitialCategory] =
+    useState<ContentCategory | undefined>()
+  const [initialVisibility, setInitialVisibility] =
+    useState<Visibility>("private")
+  const [initialContent, setInitialContent] =
+    useState<JSONContent>()
+
   const [dirty, setDirty] = useState(false)
   const [renderKey, setRenderKey] = useState(0)
 
@@ -40,10 +65,13 @@ export default function NotePage() {
     async function fetchData() {
       if (!noteId) return
 
-      const res = await fetch(`/api/notes/${noteId}`, {
-        method: "GET"
-      })
-      const { note: fetchedNote } = await res.json() as { note: Note }
+      const res = await fetch(
+        `/api/notes/${noteId}`,
+        { method: "GET" }
+      )
+
+      const { note: fetchedNote } =
+        (await res.json()) as { note: Note }
 
       setNote(fetchedNote)
 
@@ -54,10 +82,14 @@ export default function NotePage() {
       setContent(fetchedNote.content as JSONContent)
 
       setInitialTitle(fetchedNote.title)
-      setInitialDescription(fetchedNote.description ?? "")
+      setInitialDescription(
+        fetchedNote.description ?? ""
+      )
       setInitialCategory(fetchedNote.category)
       setInitialVisibility(fetchedNote.visibility)
-      setInitialContent(fetchedNote.content as JSONContent)
+      setInitialContent(
+        fetchedNote.content as JSONContent
+      )
     }
 
     fetchData()
@@ -69,21 +101,38 @@ export default function NotePage() {
       return
     }
 
-    if (Object.keys(content).length === 0 || Object.keys(initialContent).length === 0) {
+    if (
+      Object.keys(content).length === 0 ||
+      Object.keys(initialContent).length === 0
+    ) {
       setDirty(false)
       return
     }
 
-    const isDirty = (
+    const isDirty =
       title !== initialTitle ||
       description !== initialDescription ||
       category !== initialCategory ||
-      visibility !== initialVisibility
-    ) || !compareProseMirrorJSON(content, initialContent)
+      visibility !== initialVisibility ||
+      !compareProseMirrorJSON(
+        content,
+        initialContent
+      )
 
     setDirty(isDirty)
     console.log(isDirty)
-  }, [title, description, category, visibility, content, initialTitle, initialDescription, initialCategory, initialVisibility, initialContent])
+  }, [
+    title,
+    description,
+    category,
+    visibility,
+    content,
+    initialTitle,
+    initialDescription,
+    initialCategory,
+    initialVisibility,
+    initialContent,
+  ])
 
   function handleCancel() {
     setTitle(initialTitle)
@@ -91,34 +140,44 @@ export default function NotePage() {
     setCategory(initialCategory)
     setVisibility(initialVisibility)
     setContent(initialContent)
-    setRenderKey(k => k + 1)
+    setRenderKey((k) => k + 1)
   }
 
   async function handleUpdate() {
     if (!noteId || !dirty) return
 
-    const res = await fetch(`/api/notes/${noteId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title, 
-        description, 
-        content, 
-        category, 
-        visibility
-      })
-    })
+    const res = await fetch(
+      `/api/notes/${noteId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          content,
+          category,
+          visibility,
+        }),
+      }
+    )
 
     if (res.ok) {
-      const { note: updatedNote } = await res.json() as { note: Note }
+      const { note: updatedNote } =
+        (await res.json()) as { note: Note }
 
       setNote(updatedNote)
 
       setInitialTitle(updatedNote.title)
-      setInitialDescription(updatedNote.description ?? "")
+      setInitialDescription(
+        updatedNote.description ?? ""
+      )
       setInitialCategory(updatedNote.category)
       setInitialVisibility(updatedNote.visibility)
-      setInitialContent(updatedNote.content as JSONContent)
+      setInitialContent(
+        updatedNote.content as JSONContent
+      )
       setDirty(false)
 
       toast.success("Update success")
@@ -130,9 +189,10 @@ export default function NotePage() {
   async function handleDelete() {
     if (!noteId) return
 
-    const res = await fetch(`/api/notes/${noteId}`, {
-      method: "DELETE"
-    })
+    const res = await fetch(
+      `/api/notes/${noteId}`,
+      { method: "DELETE" }
+    )
 
     if (res.ok) {
       toast.success("Delete success")
@@ -144,66 +204,112 @@ export default function NotePage() {
 
   return (
     <>
-      <section key={renderKey}>
-        <Label htmlFor="title">Title</Label>
-        <Input
-          id="title"
-          type="text"
-          placeholder="Untitled"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-        <Label htmlFor="desc">Description</Label>
-        <Textarea
-          id="desc"
-          placeholder="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-        <Select
-          value={category}
-          onValueChange={(value) => {
-            const v = value as ContentCategory
-            setCategory(v)
-          }}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map((c, i) => {
-              const cValue = c.replaceAll(' ', '_').toLowerCase() as ContentCategory
-              return (
-                <SelectItem key={i} value={cValue}>
-                  {c}
-                </SelectItem>
-              )
-            })}
-          </SelectContent>
-        </Select>
-        <Label htmlFor="vis">Visibility</Label>
-        <RadioGroup
-          value={visibility}
-          onValueChange={(value) => {
-            const v = value as Visibility
-            setVisibility(v)
-          }}
-        >
-          <Label>
-            <RadioGroupItem value="private" />
-            Private
-          </Label>     
-          <Label>
-            <RadioGroupItem value="public" />
-            Public
-          </Label>     
-        </RadioGroup>
-        <div>
-          <Button onClick={handleUpdate} disabled={!dirty}>Update</Button>
-          <Button variant="outline" onClick={handleCancel} disabled={!dirty}>Cancel</Button>
+      <section
+        key={renderKey}
+        className="mb-8 flex flex-col gap-6 rounded-xl border bg-card p-6 shadow-sm"
+      >
+        <div className="space-y-2">
+          <Label htmlFor="title">Title</Label>
+          <Input
+            id="title"
+            type="text"
+            placeholder="Untitled"
+            value={title}
+            onChange={(e) =>
+              setTitle(e.target.value)
+            }
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="desc">
+            Description
+          </Label>
+          <Textarea
+            id="desc"
+            placeholder="description"
+            value={description}
+            onChange={(e) =>
+              setDescription(e.target.value)
+            }
+          />
+        </div>
+
+        <div className="grid gird-cols-1 gap-6 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Select
+              value={category}
+              onValueChange={(value) => {
+                const v = value as ContentCategory
+                setCategory(v)
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+
+              <SelectContent>
+                {categories.map((c, i) => {
+                  const cValue = c
+                    .replaceAll(" ", "_")
+                    .toLowerCase() as ContentCategory
+
+                  return (
+                    <SelectItem
+                      key={i}
+                      value={cValue}
+                    >
+                      {c}
+                    </SelectItem>
+                  )
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="vis">
+              Visibility
+            </Label>
+            <RadioGroup
+              value={visibility}
+              onValueChange={(value) => {
+                const v = value as Visibility
+                setVisibility(v)
+              }}
+            >
+              <Label>
+                <RadioGroupItem value="private" />
+                Private
+              </Label>
+
+              <Label>
+                <RadioGroupItem value="public" />
+                Public
+              </Label>
+            </RadioGroup>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={handleUpdate}
+            disabled={!dirty}
+          >
+            Update
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={handleCancel}
+            disabled={!dirty}
+          >
+            Cancel
+          </Button>
         </div>
       </section>
-      <section>
+
+      <section className="mt-10">
         <Button
           variant="destructive"
           onClick={handleDelete}
@@ -211,7 +317,8 @@ export default function NotePage() {
           Delete
         </Button>
       </section>
-      <section className="p-4">
+
+      <section className="mt-10 p-4">
         {content && (
           <TiptapEditor
             key={`${noteId}-${renderKey}`}

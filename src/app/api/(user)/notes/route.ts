@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
 
     const rawCategory = searchParams.get("category")
     const rawOrder = searchParams.get("order")
+    const rawVisibilty = searchParams.get("visibility")
     const rawSearch = searchParams.get("search")
     const rawPage = searchParams.get("page")
     const limit = 10
@@ -27,6 +28,10 @@ export async function GET(req: NextRequest) {
     const order: "asc" | "desc" = rawOrder === "desc" || rawOrder === "asc" 
       ? rawOrder 
       : "asc"
+
+    const visibility = rawVisibilty === "public" || rawVisibilty === "private"
+      ? rawVisibilty
+      : undefined
 
     const search = rawSearch && rawSearch.trim().length > 0
       ? rawSearch.trim()
@@ -59,10 +64,11 @@ export async function GET(req: NextRequest) {
       where: {
         userId,
         ...(category && { category }),
+        ...(visibility && { visibility }),
         ...(search && { title: { contains: search } })
       },
       orderBy: {
-        createdAt: order
+        createdAt: order,
       },
       skip: skip,
       take: limit

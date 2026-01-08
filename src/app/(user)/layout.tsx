@@ -9,7 +9,7 @@ export default function UserLayout({
     <>
       <div className="flex">
         <UserSidebar />
-        <main className="flex-1 min-w-0 p-4">
+        <main className="flex-1 min-w-0 p-8">
           {children}
         </main>
       </div>
