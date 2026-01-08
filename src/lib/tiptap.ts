@@ -1,7 +1,16 @@
 import { JSONContent } from "@tiptap/react"
-import { schema as basicSchema } from "prosemirror-schema-basic"
+import StarterKit from "@tiptap/starter-kit"
+import { Schema } from "@tiptap/pm/model"
+import { getSchema } from "@tiptap/core"
 
-export function compareProseMirrorJSON(a: JSONContent, b: JSONContent, schema = basicSchema) {
+
+const tiptapExtensions = [
+  StarterKit
+]
+
+const tiptapSchema: Schema = getSchema(tiptapExtensions)
+
+export function compareProseMirrorJSON(a: JSONContent, b: JSONContent, schema = tiptapSchema) {
   try {
     const node1 = schema.nodeFromJSON(a)
     const node2 = schema.nodeFromJSON(b)

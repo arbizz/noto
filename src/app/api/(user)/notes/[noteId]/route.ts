@@ -44,6 +44,41 @@ export async function GET(_req: Request, { params }: { params: Promise<{ noteId:
   }
 }
 
+export async function DELETE(_req: Request, { params }: { params: Promise<{ noteId: string }> }) {
+  try {
+    const { noteId: id } = await params
+    const session = await auth()
+
+    if (!session?.user) return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    )
+
+    const userId = Number(session.user.id)
+    const noteId = Number(id)
+
+    await prisma.note.delete({
+      where: {
+        userId,
+        id: noteId
+      }
+    })
+
+    return NextResponse.json(
+      { message: "Success" },
+      { status: 200 }
+    )
+
+  } catch (err) {
+    console.error(err)
+    
+    return NextResponse.json(
+      { error: "Server error" },
+      { status: 500 }
+    )
+  }
+}
+
 export async function PATCH(req: Request, { params }: { params: Promise<{ noteId: string }> }) {
   try {
     const { noteId: id } = await params

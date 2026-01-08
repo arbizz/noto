@@ -11,12 +11,13 @@ import { categories } from "@/data/user"
 import { ContentCategory, Note, Visibility } from "@/generated/prisma/client"
 import { compareProseMirrorJSON } from "@/lib/tiptap"
 import { JSONContent } from "@tiptap/react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
 export default function NotePage() {
   const { noteId: id } = useParams()
+  const router = useRouter()
   const noteId = Array.isArray(id) ? id[0] : id
 
   const [note, setNote] = useState<Note | undefined>()
@@ -126,6 +127,21 @@ export default function NotePage() {
     }
   }
 
+  async function handleDelete() {
+    if (!noteId) return
+
+    const res = await fetch(`/api/notes/${noteId}`, {
+      method: "DELETE"
+    })
+
+    if (res.ok) {
+      toast.success("Delete success")
+      router.push("/notes")
+    } else {
+      toast.error("Delete failed")
+    }
+  }
+
   return (
     <>
       <section key={renderKey}>
@@ -186,6 +202,14 @@ export default function NotePage() {
           <Button onClick={handleUpdate} disabled={!dirty}>Update</Button>
           <Button variant="outline" onClick={handleCancel} disabled={!dirty}>Cancel</Button>
         </div>
+      </section>
+      <section>
+        <Button
+          variant="destructive"
+          onClick={handleDelete}
+        >
+          Delete
+        </Button>
       </section>
       <section className="p-4">
         {content && (
