@@ -10,28 +10,19 @@ function TiptapEditor({
   content,
   onChange,
   className,
-  readonly, 
 }: {
   content: JSONContent,
   onChange: (value: JSONContent) => void,
   className: string,
-  readonly?: boolean
 }) {
   const editor = useEditor({
     extensions: [StarterKit],
     content,
+    immediatelyRender: false,
     onUpdate: ({ editor }) => {
       onChange(editor.getJSON())
     },
-    immediatelyRender: false,
-    editable: !readonly
   })
-
-  useEffect(() => {
-    if (editor && content) {
-      editor.commands.setContent(content)
-    }
-  }, [editor, content])
 
   if (!editor) return null
 

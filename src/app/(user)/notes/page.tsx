@@ -1,69 +1,96 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { LucideSearch } from "lucide-react"
 import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue 
-} from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { categories } from "@/data/user"
 import { ContentCategory, Note } from "@/generated/prisma/client"
-import { LucideSearch } from "lucide-react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 
 type CategoryFilter = ContentCategory | "all"
+
+type PaginationMeta = {
+  totalItems: number
+  totalPages: number
+  currentPage: number
+  pageSize: number
+  hasNextPage: boolean
+  hasPreviousPage: boolean
+}
 
 export default function NotesPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
   const [notes, setNotes] = useState<Note[]>([])
-
-  const [search, setSearch] = useState(() => {
-    return searchParams.get("search") ?? ""
-  })
+  const [pagination, setPagination] = useState<PaginationMeta | null>(null)
+  const [search, setSearch] = useState(() => searchParams.get("search") ?? "")
   const [category, setCategory] = useState<CategoryFilter>(() => {
-    return (
-      (searchParams.get("category") as ContentCategory) ?? "all"
-    )
+    return (searchParams.get("category") as ContentCategory) ?? "all"
   })
-  const [order, setOrder] = useState<"asc" | "desc" | undefined>(() => {
+  const [order, setOrder] = useState<"asc" | "desc">(() => {
     const value = searchParams.get("order")
     return value === "asc" || value === "desc" ? value : "asc"
-  })  
+  })
+
+  const [page, setPage] = useState(() => {
+    return searchParams.get("page") ?? "1"
+  })
 
   function handleUpdateQuery(paramsObj: Record<string, string | undefined>) {
     const params = new URLSearchParams(searchParams.toString())
 
     for (const [key, value] of Object.entries(paramsObj)) {
-      if (value) params.set(key, value)
-      else params.delete(key)
+      if (value) {
+        params.set(key, value)
+      } else {
+        params.delete(key)
+      }
     }
 
     router.push(`?${params.toString()}`)
+  }
+
+  function createPageUrl(page: number) {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set("page", String(page))
+    return `?${params.toString()}`
   }
 
   useEffect(() => {
     async function fetchData() {
       const res = await fetch(`/api/notes?${searchParams.toString()}`, {
         method: "GET",
-        credentials: "include",
       })
 
-      const { notes }: { notes: Note[] } = await res.json()
+      const data = await res.json()
+      const { notes, pagination }: { notes: Note[], pagination: PaginationMeta } = data
+
+      const requestedPage = parseInt(searchParams.get("page") ?? "1")
+
+      if (requestedPage > pagination.totalPages && pagination.totalPages > 0) {
+        handleUpdateQuery({ page: String(pagination.totalPages) })
+        return
+      }
+
+      if (requestedPage < 1) {
+        handleUpdateQuery({ page: "1" })
+    }
+
       setNotes(notes)
+      setPagination(pagination)
     }
 
     fetchData()
   }, [searchParams])
+
   return (
     <>
       <section>
@@ -158,6 +185,76 @@ export default function NotesPage() {
             </CardFooter>
           </Card>
         ))}
+      </section>
+      <section className="flex justify-center mt-8">
+        {pagination && pagination.totalPages > 1 && (
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  href={pagination.hasPreviousPage ? createPageUrl(pagination.currentPage - 1) : "#"}
+                  aria-disabled={!pagination.hasPreviousPage}
+                  className={!pagination.hasPreviousPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+
+              {(() => {
+                const total = pagination.totalPages
+                const current = pagination.currentPage
+                
+                const pages = []
+                
+                pages.push(1)
+
+                if (current > 3) {
+                  pages.push("ellipsis-start")
+                }
+
+                const neighbors = [current - 1, current, current + 1]
+                  .filter(p => p > 1 && p < total)
+                
+                pages.push(...neighbors)
+
+                if (current < total - 2) {
+                  pages.push("ellipsis-end")
+                }
+
+                if (total > 1) {
+                  pages.push(total)
+                }
+
+                return pages.map((page, index) => {
+                  if (page === "ellipsis-start" || page === "ellipsis-end") {
+                    return (
+                      <PaginationItem key={`ellipsis-${index}`}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    )
+                  }
+
+                  const pageNumber = page as number
+                  return (
+                    <PaginationItem key={pageNumber}>
+                      <PaginationLink 
+                        href={createPageUrl(pageNumber)}
+                        isActive={pagination.currentPage === pageNumber}
+                      >
+                        {pageNumber}
+                      </PaginationLink>
+                    </PaginationItem>
+                  )
+                })
+              })()}
+              <PaginationItem>
+                <PaginationNext 
+                  href={pagination.hasNextPage ? createPageUrl(pagination.currentPage + 1) : "#"}
+                  aria-disabled={!pagination.hasNextPage}
+                  className={!pagination.hasNextPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        )}
       </section>
     </>
   )

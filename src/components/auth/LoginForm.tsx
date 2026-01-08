@@ -2,7 +2,7 @@
 
 import * as z from "zod"
 import Link from "next/link"
-import { loginSchema } from "@/lib/zod/login"
+import { loginSchema } from "@/lib/zod"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { signIn } from "next-auth/react"

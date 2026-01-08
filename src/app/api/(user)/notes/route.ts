@@ -17,6 +17,8 @@ export async function GET(req: NextRequest) {
     const rawCategory = searchParams.get("category")
     const rawOrder = searchParams.get("order")
     const rawSearch = searchParams.get("search")
+    const rawPage = searchParams.get("page")
+    const limit = 10
 
     const category = Object.values(ContentCategory).includes(rawCategory as ContentCategory)
       ? (rawCategory as ContentCategory)
@@ -29,6 +31,20 @@ export async function GET(req: NextRequest) {
     const search = rawSearch && rawSearch.trim().length > 0
       ? rawSearch.trim()
       : undefined
+
+    const page = rawPage && Number(rawPage)
+      ? Number(rawPage)
+      : 1
+
+    const skip = (page - 1) * limit
+
+    const totalNotesCount = await prisma.note.count({
+      where: {
+        userId,
+        ...(category && { category }),
+        ...(search && { title: { contains: search } })
+      }
+    })
 
     const notes = await prisma.note.findMany({
       select: {
@@ -47,11 +63,26 @@ export async function GET(req: NextRequest) {
       },
       orderBy: {
         createdAt: order
-      }
+      },
+      skip: skip,
+      take: limit
     })
 
+    const totalPages = Math.ceil(totalNotesCount / limit)
+
     return NextResponse.json(
-      { message: "nice", notes: notes },
+      {
+        message: "nice",
+        notes: notes,
+        pagination: {
+          totalItems: totalNotesCount,
+          totalPages: totalPages,
+          currentPage: page,
+          pageSize: limit,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1
+        }
+      },
       { status: 200 }
     )
   } catch (err) {
@@ -73,12 +104,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { title, description, content, visibility, category } = body
 
-    if (!title || !content) {
-      return NextResponse.json(
-        { message: "" },
-        { status: 400 },
-      )
-    }
+    if (!title || Object.keys(content).length === 0 ) return NextResponse.json(
+      { message: "" },
+      { status: 400 },
+    )
 
     if (category === "") {
       const { id } = await prisma.note.create({

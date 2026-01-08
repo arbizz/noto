@@ -5,7 +5,7 @@ import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller, useForm } from "react-hook-form"
 import { Field, FieldError, FieldGroup, FieldLabel } from "../ui/field"
-import { registerSchema } from "@/lib/zod/register"
+import { registerSchema } from "@/lib/zod"
 import { Input } from "../ui/input"
 import { Button } from "../ui/button"
 import { toast } from "sonner"
@@ -45,7 +45,10 @@ export function RegisterForm() {
 
       router.push("/login")
     } catch (err) {
-      toast.error("Sign up failed")
+      toast.error("Sign up failed", {
+        description: `${err}`
+      }
+      )
     }
   }
   return(
