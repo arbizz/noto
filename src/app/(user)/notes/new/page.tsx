@@ -34,8 +34,7 @@ export default function NewNotePage() {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [category, setCategory] = useState<ContentCategory>()
-  const [visibility, setVisibility] =
-    useState<Visibility>("private")
+  const [visibility, setVisibility] = useState<Visibility>("private")
 
   async function handleCreate() {
     const res = await fetch("/api/notes", {
@@ -107,6 +106,7 @@ export default function NewNotePage() {
 
         <Label htmlFor="vis">Visibility</Label>
         <RadioGroup
+          id="vis"
           value={visibility}
           onValueChange={(value) => {
             const v = value as Visibility
