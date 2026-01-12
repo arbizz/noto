@@ -31,10 +31,8 @@ import {
 import { compareProseMirrorJSON } from "@/lib/tiptap"
 
 export default function NotePage() {
-  const { noteId: id } = useParams()
+  const { noteId } = useParams()
   const router = useRouter()
-
-  const noteId = Array.isArray(id) ? id[0] : id
 
   const [note, setNote] = useState<Note | undefined>()
 
