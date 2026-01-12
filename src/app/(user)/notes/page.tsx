@@ -7,7 +7,6 @@ import { Heart, LucideEye, LucideSearch } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 import {
   RadioGroup,
   RadioGroupItem,
@@ -60,16 +59,16 @@ export default function NotesPage() {
   const [notes, setNotes] = useState<Note[]>([])
   const [pagination, setPagination] = useState<PaginationMeta | null>(null)
 
-  const [search, setSearch] = useState(
-    () => searchParams.get("search") ?? ""
-  )
+  const [search, setSearch] = useState(() => {
+    return searchParams.get("search") ?? ""
+  })
 
   const [category, setCategory] = useState<CategoryFilter>(() => {
-    return (searchParams.get("category") as ContentCategory) ?? "all"
+    return searchParams.get("category") as ContentCategory ?? "all"
   })
 
   const [visibility, setVisibility] = useState<VisibilityFilter>(() => {
-    return (searchParams.get("visibility") as VisibilityFilter) ?? "all"
+    return searchParams.get("visibility") as VisibilityFilter ?? "all"
   })
 
   const [order, setOrder] = useState<"asc" | "desc">(() => {
@@ -111,7 +110,7 @@ export default function NotesPage() {
       const {
         notes,
         pagination,
-      }: { notes: Note[]; pagination: PaginationMeta } = data
+      }: { notes: Note[], pagination: PaginationMeta } = data
 
       const requestedPage = parseInt(
         searchParams.get("page") ?? "1"
