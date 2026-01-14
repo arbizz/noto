@@ -52,7 +52,7 @@ export default function NewFlashcardPage() {
 
   function handleDeletedFCard(e: React.FormEvent<HTMLButtonElement>, i: number) {
     e.preventDefault()
-    setFlashcards((prev) => {
+    setFlashcards(() => {
       const newSet = flashcards.filter((_, index) => index !== i)
 
       return newSet

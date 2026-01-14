@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { ContentCategory, ContentType } from "@/generated/prisma/enums";
+import { ContentCategory } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
