@@ -1,7 +1,6 @@
 "use client"
 
 import StarterKit from "@tiptap/starter-kit"
-import { useEffect } from "react"
 import { EditorContent, JSONContent, useEditor } from "@tiptap/react"
 import { TiptapToolbar } from "@/components/user/TiptapToolbar"
 import { Separator } from "@/components/ui/separator"

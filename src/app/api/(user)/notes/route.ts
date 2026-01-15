@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     const rawVisibilty = searchParams.get("visibility")
     const rawSearch = searchParams.get("search")
     const rawPage = searchParams.get("page")
-    const limit = 10
+    const limit = 12
 
     const category = Object.values(ContentCategory).includes(rawCategory as ContentCategory)
       ? (rawCategory as ContentCategory)
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 
     const order: "asc" | "desc" = rawOrder === "desc" || rawOrder === "asc" 
       ? rawOrder 
-      : "asc"
+      : "desc"
 
     const visibility = rawVisibilty === "public" || rawVisibilty === "private"
       ? rawVisibilty

@@ -37,9 +37,9 @@ function TiptapToolbar({ editor }: { editor: Editor }) {
         isHeading1: ctx.editor.isActive('heading', { level: 1 }) ?? false,
         isHeading2: ctx.editor.isActive('heading', { level: 2 }) ?? false,
         isHeading3: ctx.editor.isActive('heading', { level: 3 }) ?? false,
-        isHeading4: ctx.editor.isActive('heading', { level: 4 }) ?? false,
-        isHeading5: ctx.editor.isActive('heading', { level: 5 }) ?? false,
-        isHeading6: ctx.editor.isActive('heading', { level: 6 }) ?? false,
+        // isHeading4: ctx.editor.isActive('heading', { level: 4 }) ?? false,
+        // isHeading5: ctx.editor.isActive('heading', { level: 5 }) ?? false,
+        // isHeading6: ctx.editor.isActive('heading', { level: 6 }) ?? false,
         isBulletList: ctx.editor.isActive('bulletList') ?? false,
         isOrderedList: ctx.editor.isActive('orderedList') ?? false,
         isCodeBlock: ctx.editor.isActive('codeBlock') ?? false,
@@ -126,7 +126,7 @@ function TiptapToolbar({ editor }: { editor: Editor }) {
       >
         <LucideHeading3 />
       </Button>
-      <Button
+      {/* <Button
         variant="ghost"
         size="icon"
         onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
@@ -146,7 +146,7 @@ function TiptapToolbar({ editor }: { editor: Editor }) {
         onClick={() => editor.chain().focus().toggleHeading({ level: 6 }).run()}
       >
         <LucideHeading6 />
-      </Button>
+      </Button> */}
       <Button
         variant="ghost"
         size="icon"

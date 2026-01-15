@@ -204,23 +204,21 @@ export default function NotePage() {
     <>
       <section
         key={renderKey}
-        className="mb-8 flex flex-col gap-6 rounded-xl border bg-card p-6 shadow-sm"
+        className="space-y-4"
       >
-        <div className="space-y-2">
-          <Label htmlFor="title">Title</Label>
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="title" className="ml-1">Title</Label>
           <Input
             id="title"
             type="text"
             placeholder="Untitled"
             value={title}
-            onChange={(e) =>
-              setTitle(e.target.value)
-            }
+            onChange={(e) => setTitle(e.target.value)}
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="desc">
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="desc" className="ml-1">
             Description
           </Label>
           <Textarea
@@ -233,39 +231,37 @@ export default function NotePage() {
           />
         </div>
 
-        <div className="grid gird-cols-1 gap-6 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Select
-              value={category}
-              onValueChange={(value) => {
-                const v = value as ContentCategory
-                setCategory(v)
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
+        <div className="grid grid-cols-2 gap-4">
+          <Select
+            value={category}
+            onValueChange={(value) => {
+              const v = value as ContentCategory
+              setCategory(v)
+            }}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
 
-              <SelectContent>
-                {categories.map((c, i) => {
-                  const cValue = c
-                    .replaceAll(" ", "_")
-                    .toLowerCase() as ContentCategory
+            <SelectContent>
+              {categories.map((c, i) => {
+                const cValue = c
+                  .replaceAll(" ", "_")
+                  .toLowerCase() as ContentCategory
 
-                  return (
-                    <SelectItem
-                      key={i}
-                      value={cValue}
-                    >
-                      {c}
-                    </SelectItem>
-                  )
-                })}
-              </SelectContent>
-            </Select>
-          </div>
+                return (
+                  <SelectItem
+                    key={i}
+                    value={cValue}
+                  >
+                    {c}
+                  </SelectItem>
+                )
+              })}
+            </SelectContent>
+          </Select>
 
-          <div className="space-y-2">
+          <div className="flex gap-2 w-full">
             <Label htmlFor="vis">
               Visibility
             </Label>
@@ -275,19 +271,31 @@ export default function NotePage() {
                 const v = value as Visibility
                 setVisibility(v)
               }}
+              className="flex flex-1 justify-between"
             >
-              <Label>
+              <Label className="flex flex-1 items-center gap-2 border p-2 rounded-md shadow-xs">
                 <RadioGroupItem value="private" />
                 Private
               </Label>
 
-              <Label>
+              <Label className="flex flex-1 items-center gap-2 border p-2 rounded-md shadow-xs">
                 <RadioGroupItem value="public" />
                 Public
               </Label>
             </RadioGroup>
           </div>
         </div>
+      </section>
+
+      <section className="flex flex-col gap-8 mt-12">
+        {content && (
+          <TiptapEditor
+            key={`${noteId}-${renderKey}`}
+            content={content}
+            onChange={setContent}
+            className="border"
+          />
+        )}
 
         <div className="flex items-center gap-3">
           <Button
@@ -304,27 +312,14 @@ export default function NotePage() {
           >
             Cancel
           </Button>
+
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+          >
+            Delete
+          </Button>
         </div>
-      </section>
-
-      <section className="mt-10">
-        <Button
-          variant="destructive"
-          onClick={handleDelete}
-        >
-          Delete
-        </Button>
-      </section>
-
-      <section className="mt-10 p-4">
-        {content && (
-          <TiptapEditor
-            key={`${noteId}-${renderKey}`}
-            content={content}
-            onChange={setContent}
-            className="border"
-          />
-        )}
       </section>
     </>
   )

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Heart, LucideEye, LucideSearch } from "lucide-react"
+import { Heart, LucideEye, LucidePlus, LucideSearch } from "lucide-react"
 
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -38,6 +38,7 @@ import {
 import { categories } from "@/data/user"
 import { ContentCategory, Note, Visibility } from "@/generated/prisma/client"
 import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
 
 type CategoryFilter = ContentCategory | "all"
 
@@ -73,7 +74,7 @@ export default function NotesPage() {
 
   const [order, setOrder] = useState<"asc" | "desc">(() => {
     const value = searchParams.get("order")
-    return value === "asc" || value === "desc" ? value : "asc"
+    return value === "asc" || value === "desc" ? value : "desc"
   })
 
   function handleUpdateQuery(
@@ -169,7 +170,7 @@ export default function NotesPage() {
           </Button>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-3 w-full gap-4">
           <Select
             value={category}
             onValueChange={(value) => {
@@ -200,117 +201,119 @@ export default function NotesPage() {
             </SelectContent>
           </Select>
 
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex gap-2">
-              <Label className="whitespace-nowrap">
-                Created at:
+          <Select
+            value={order}
+            onValueChange={(value) => {
+              const v = value as "asc" | "desc"
+              setOrder(v)
+              handleUpdateQuery({ order: v })
+            }}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Order" />
+            </SelectTrigger>
+
+            <SelectContent>
+              <SelectItem value="desc">Newest</SelectItem>
+              <SelectItem value="asc">Oldest</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="flex w-full justify-between gap-2">
+            <Label className="whitespace-nowrap">
+              Visibilty:
+            </Label>
+
+            <RadioGroup
+              value={visibility}
+              onValueChange={(value) => {
+                const v = value as VisibilityFilter
+                setVisibility(v)
+                handleUpdateQuery({ visibility: v === "all" ? undefined : v })
+              }}
+              className="flex flex-1 justify-between"
+            >
+              <Label className="flex items-center gap-2 border p-2 rounded-md shadow-xs w-full">
+                <RadioGroupItem value="all" />
+                All
               </Label>
 
-              <RadioGroup
-                value={order}
-                onValueChange={(value) => {
-                  const v = value as "asc" | "desc"
-                  setOrder(v)
-                  handleUpdateQuery({ order: v })
-                }}
-                className="flex"
-              >
-                <Label className="flex items-center gap-2">
-                  <RadioGroupItem value="asc" className="p-2" />
-                  Asc
-                </Label>
-
-                <Label className="flex items-center gap-2">
-                  <RadioGroupItem value="desc" className="p-2" />
-                  Desc
-                </Label>
-              </RadioGroup>
-            </div>
-            <div className="flex gap-2">
-              <Label className="whitespace-nowrap">
-                Visibilty:
+              <Label className="flex items-center gap-2 border p-2 rounded-md shadow-xs w-full">
+                <RadioGroupItem value="private" />
+                Private
               </Label>
 
-              <RadioGroup
-                value={visibility}
-                onValueChange={(value) => {
-                  const v = value as VisibilityFilter
-                  setVisibility(v)
-                  handleUpdateQuery({ visibility: v === "all" ? undefined : v })
-                }}
-                className="flex"
-              >
-                <Label className="flex items-center gap-2">
-                  <RadioGroupItem value="all" />
-                  All
-                </Label>
-
-                <Label className="flex items-center gap-2">
-                  <RadioGroupItem value="private" />
-                  Private
-                </Label>
-
-                <Label className="flex items-center gap-2">
-                  <RadioGroupItem value="public" />
-                  Public
-                </Label>
-              </RadioGroup>
-            </div>
+              <Label className="flex items-center gap-2 border p-2 rounded-md shadow-xs w-full">
+                <RadioGroupItem value="public" />
+                Public
+              </Label>
+            </RadioGroup>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {notes.map((n) => (
-          <Card
-            key={n.id}
-            role="button"
-            tabIndex={0}
-            onClick={() => router.push(`/notes/${n.id}`)}
-            className="
-              group cursor-pointer
-              transition-all
-              hover:border-primary/40
-              hover:shadow-md
-              focus-visible:ring-2 focus-visible:ring-ring
-            "
-          >
-            <CardHeader className="gap-2">
-              <div className="flex items-start justify-between gap-2">
-                <CardTitle className="line-clamp-2 text-base font-semibold">
-                  {n.title}
-                </CardTitle>
-              </div>
-        
-              {n.description && (
-                <CardDescription className="line-clamp-3 text-sm">
-                  {n.description}
-                </CardDescription>
-              )}
-            </CardHeader>
-            
-            <CardFooter className="flex items-center justify-between pt-3 text-sm">
-              <div className="flex flex-wrap gap-2">
-                <Badge className="capitalize">
-                  {n.category.replaceAll("_", " ")}
-                </Badge>
-            
-                <Badge
-                  variant="secondary"
-                  className="capitalize"
-                >
-                  <LucideEye />
-                  {n.visibility}
-                </Badge>
-              </div>
+      <section className="flex flex-col gap-4">
+        <div>
+          <Button asChild>
+            <Link href="/notes/new">
+              Add
+              <LucidePlus />
+            </Link>
+          </Button>
+        </div>
 
-              {n.visibility === "public" && <div className="flex items-center gap-1 text-muted-foreground">
-                <Heart className="h-4 w-4 group-hover:text-primary transition-colors" />
-                <span className="text-xs font-medium">{n.likes}</span>
-              </div>}
-            </CardFooter>
-          </Card>
-        ))}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 w-full">
+          {notes.map((n) => (
+            <Card
+              key={n.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => router.push(`/notes/${n.id}`)}
+              className="
+                group cursor-pointer
+                transition-all
+                hover:border-primary/40
+                hover:shadow-md
+                focus-visible:ring-2 focus-visible:ring-ring
+              "
+            >
+              <CardHeader className="gap-2">
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="line-clamp-2 text-base font-semibold">
+                    {n.title}
+                  </CardTitle>
+                </div>
+          
+                {n.description && (
+                  <CardDescription className="line-clamp-3 text-sm">
+                    {n.description}
+                  </CardDescription>
+                )}
+              </CardHeader>
+              
+              <CardFooter className="flex items-center justify-between pt-3 text-sm">
+                <div className="flex flex-wrap gap-2">
+                  <Badge className="capitalize">
+                    {n.category.replaceAll("_", " ")}
+                  </Badge>
+              
+                  <Badge
+                    variant="secondary"
+                    className="capitalize"
+                  >
+                    <LucideEye />
+                    {n.visibility}
+                  </Badge>
+                </div>
+
+                {n.visibility === "public" && <div className="flex items-center gap-1 text-muted-foreground">
+                  <Heart className="h-4 w-4 group-hover:text-primary transition-colors" />
+                  <span className="text-xs font-medium">{n.likes}</span>
+                </div>}
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
       </section>
 
       <section className="mt-10 flex justify-center">
