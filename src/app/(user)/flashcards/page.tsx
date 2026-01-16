@@ -9,9 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { categories } from "@/data/user"
 import { FlashcardSet } from "@/generated/prisma/client"
 import { ContentCategory, Visibility } from "@/generated/prisma/enums"
-import { LucideSearch } from "lucide-react"
+import { Heart, LucideEye, LucidePlus, LucideSearch } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
+import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
 
 type CategoryFilter = ContentCategory | "all"
 
@@ -76,11 +78,12 @@ export default function FlashcardsPage() {
 
   return (
     <>
-      <section>
-        <h1>Notes</h1>
+      <section className="mb-6 flex flex-col gap-1">
+        <h1>Flashcards</h1>
         <p>Lorem ipsum dolor sit amet consectetur.</p>
       </section>
-      <section>
+
+      {/* <section>
         <div>
           <Input
             type="text"
@@ -180,31 +183,203 @@ export default function FlashcardsPage() {
             </Label>
           </RadioGroup>
         </div>
+      </section> */}
+
+      <section className="mb-8 flex flex-col gap-6 rounded-xl border bg-card p-6 shadow-sm">
+        <div className="flex w-full gap-3">
+          <Input
+            type="text"
+            placeholder="Search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleUpdateQuery({ search })
+              }
+            }}
+            className="flex-1"
+          />
+
+          <Button
+            type="button"
+            size="icon"
+            onClick={() => handleUpdateQuery({ search })}
+          >
+            <LucideSearch />
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-3 w-full gap-4">
+          <Select
+            value={category}
+            onValueChange={(value) => {
+              const v = value as CategoryFilter
+              setCategory(v)
+              handleUpdateQuery({
+                category: v === "all" ? undefined : v,
+              })
+            }}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              {categories.map((c, i) => {
+                const cValue = c
+                  .replaceAll(" ", "_")
+                  .toLowerCase()
+
+                return (
+                  <SelectItem key={i} value={cValue}>
+                    {c}
+                  </SelectItem>
+                )
+              })}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={order}
+            onValueChange={(value) => {
+              const v = value as "asc" | "desc"
+              setOrder(v)
+              handleUpdateQuery({ order: v })
+            }}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Order" />
+            </SelectTrigger>
+
+            <SelectContent>
+              <SelectItem value="desc">Newest</SelectItem>
+              <SelectItem value="asc">Oldest</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="flex w-full justify-between gap-2">
+            <Label className="whitespace-nowrap">
+              Visibilty:
+            </Label>
+
+            <RadioGroup
+              value={visibility}
+              onValueChange={(value) => {
+                const v = value as VisibilityFilter
+                setVisibility(v)
+                handleUpdateQuery({ visibility: v === "all" ? undefined : v })
+              }}
+              className="flex flex-1 justify-between"
+            >
+              <Label className="flex items-center gap-2 border p-2 rounded-md shadow-xs w-full">
+                <RadioGroupItem value="all" />
+                All
+              </Label>
+
+              <Label className="flex items-center gap-2 border p-2 rounded-md shadow-xs w-full">
+                <RadioGroupItem value="private" />
+                Private
+              </Label>
+
+              <Label className="flex items-center gap-2 border p-2 rounded-md shadow-xs w-full">
+                <RadioGroupItem value="public" />
+                Public
+              </Label>
+            </RadioGroup>
+          </div>
+        </div>
       </section>
 
-      <section>
-        {flashcards.map((f) => (
-          <Card
-            key={f.id}
-            role="button"
-            tabIndex={0}
-            onClick={() => router.push(`/flashcards/${f.id}`)}
-          >
-            <CardHeader>
-              <CardTitle>
-                {f.title}
-              </CardTitle>
+      <section className="flex flex-col gap-4">
+        <div>
+          <Button asChild>
+              <Link href="/flashcards/new">
+                Add
+                <LucidePlus />
+              </Link>
+          </Button>
+        </div>
 
-              <CardDescription>
-                {f.description}
-              </CardDescription>
-            </CardHeader>
+        {/* <div>
+          {flashcards.map((f) => (
+            <Card
+              key={f.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => router.push(`/flashcards/${f.id}`)}
+            >
+              <CardHeader>
+                <CardTitle>
+                  {f.title}
+                </CardTitle>
 
-            <CardFooter>
-              <span>{f.visibility}</span>
-            </CardFooter>
-          </Card>
-        ))}
+                <CardDescription>
+                  {f.description}
+                </CardDescription>
+              </CardHeader>
+
+              <CardFooter>
+                <span>{f.visibility}</span>
+              </CardFooter>
+            </Card>
+          ))}
+        </div> */}
+
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 w-full">
+          {flashcards.map((f) => (
+            <Card
+              key={f.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => router.push(`/flashcards/${f.id}`)}
+              className="
+                group cursor-pointer
+                transition-all
+                hover:border-primary/40
+                hover:shadow-md
+                focus-visible:ring-2 focus-visible:ring-ring
+              "
+            >
+              <CardHeader className="gap-2">
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="line-clamp-2 text-base font-semibold">
+                    {f.title}
+                  </CardTitle>
+                </div>
+          
+                {f.description && (
+                  <CardDescription className="line-clamp-3 text-sm">
+                    {f.description}
+                  </CardDescription>
+                )}
+              </CardHeader>
+              
+              <CardFooter className="flex items-center justify-between pt-3 text-sm">
+                <div className="flex flex-wrap gap-2">
+                  {f.category && (
+                    <Badge className="capitalize">
+                      {f.category.replaceAll("_", " ")}
+                    </Badge>
+                  )}
+
+                  <Badge variant="secondary" className="capitalize flex items-center gap-1">
+                    <LucideEye className="h-4 w-4" />
+                    {f.visibility}
+                  </Badge>
+                </div>
+                
+                {f.visibility === "public" && (
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <Heart className="h-4 w-4 group-hover:text-primary transition-colors" />
+                    <span className="text-xs font-medium">{f.likes}</span>
+                  </div>
+                )}
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
       </section>
     </>
   )

@@ -39,7 +39,6 @@ export default function FlashcardPage() {
   const router = useRouter()
   const { flashcardId } = useParams<{ flashcardId: string }>()
 
-  /* ======================= STATE ======================= */
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [category, setCategory] = useState<ContentCategory | undefined>()
@@ -54,7 +53,6 @@ export default function FlashcardPage() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
 
-  /* ======================= FETCH ======================= */
   useEffect(() => {
     async function fetchData() {
       const res = await fetch(`/api/flashcards/${flashcardId}`)
@@ -85,7 +83,6 @@ export default function FlashcardPage() {
     fetchData()
   }, [flashcardId])
 
-  /* ======================= DIRTY CHECK ======================= */
   useEffect(() => {
     if (!initialState) return
 
@@ -107,14 +104,12 @@ export default function FlashcardPage() {
     initialState,
   ])
 
-  /* ======================= SAFE INDEX ======================= */
   useEffect(() => {
     if (currentIndex >= flashcards.length) {
       setCurrentIndex(Math.max(0, flashcards.length - 1))
     }
   }, [flashcards.length, currentIndex])
 
-  /* ======================= HELPERS ======================= */
   function updateCard(
     index: number,
     field: "front" | "back",
@@ -200,10 +195,8 @@ export default function FlashcardPage() {
   const currentCard = flashcards[currentIndex]
   if (!currentCard) return null
 
-  /* ======================= RENDER ======================= */
   return (
     <>
-      {/* ================= METADATA ================= */}
       <section className="space-y-4">
         <div>
           <Label>Title</Label>
@@ -269,7 +262,6 @@ export default function FlashcardPage() {
         </Button>
       </section>
 
-      {/* ================= FLASHCARD ================= */}
       <section className="mt-10 flex flex-col items-center gap-6">
         <div
           className="w-[320px] h-52 perspective"
