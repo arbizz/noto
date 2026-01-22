@@ -18,6 +18,8 @@ export async function GET(req: NextRequest) {
     const rawOrder = searchParams.get("order")
     const rawSearch = searchParams.get("search")
     const rawVisibilty = searchParams.get("visibility")
+    const rawPage = searchParams.get("page")
+    const limit = 12
 
     const category = Object.values(ContentCategory).includes(rawCategory as ContentCategory)
       ? (rawCategory as ContentCategory)
@@ -27,13 +29,28 @@ export async function GET(req: NextRequest) {
       ? rawOrder 
       : "asc"
 
+    const visibility = rawVisibilty === "public" || rawVisibilty === "private"
+      ? rawVisibilty
+        : undefined
+
     const search = rawSearch && rawSearch.trim().length > 0
       ? rawSearch.trim()
       : undefined
 
-    const visibility = rawVisibilty === "public" || rawVisibilty === "private"
-      ? rawVisibilty
-      : undefined
+    const page = rawPage && Number(rawPage)
+      ? Number(rawPage)
+      : 1
+
+    const skip = (page - 1) * limit
+
+    const totalFlashcardsCount = await prisma.flashcardSet.count({
+      where: {
+        userId,
+        ...(category && { category }),
+        ...(visibility && { visibility }),
+        ...(search && { title: { contains: search } })
+      }
+    })
 
     const flashcards = await prisma.flashcardSet.findMany({
       select: {
@@ -53,11 +70,25 @@ export async function GET(req: NextRequest) {
       },
       orderBy: {
         createdAt: order,
-      }
+      },
+      skip: skip,
+      take:limit
     })
 
+    const totalPages = Math.ceil(totalFlashcardsCount / limit)
+
     return NextResponse.json(
-      { message: "nice", flashcards: flashcards },
+      { message: "nice",
+        flashcards: flashcards,
+        pagination: {
+          totalItems: totalFlashcardsCount,
+          totalPages: totalPages,
+          currentPage: page,
+          pageSize: limit,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1
+        }
+      },
       { status: 200 }
     )
   } catch (err) {

@@ -47,6 +47,7 @@ export async function GET(req: NextRequest) {
       where: {
         userId,
         ...(category && { category }),
+        ...(visibility && { visibility }),
         ...(search && { title: { contains: search } })
       }
     })

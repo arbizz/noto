@@ -1,29 +1,65 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Heart, LucideEye, LucidePlus, LucideSearch } from "lucide-react"
+
 import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from "@/components/ui/radio-group"
+import {
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
+
 import { categories } from "@/data/user"
 import { FlashcardSet } from "@/generated/prisma/client"
 import { ContentCategory, Visibility } from "@/generated/prisma/enums"
-import { Heart, LucideEye, LucidePlus, LucideSearch } from "lucide-react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
-import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 
 type CategoryFilter = ContentCategory | "all"
 
 type VisibilityFilter = Visibility | "all"
 
+type PaginationMeta = {
+  totalItems: number
+  totalPages: number
+  currentPage: number
+  pageSize: number
+  hasNextPage: boolean
+  hasPreviousPage: boolean
+}
+
 export default function FlashcardsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
   const [flashcards, setFlashcards] = useState<FlashcardSet[]>([])
+  const [pagination, setPagination] = useState<PaginationMeta | null>(null)
 
   const [search, setSearch] = useState(() => {
     return searchParams.get("search") ?? ""
@@ -39,7 +75,7 @@ export default function FlashcardsPage() {
 
   const [order, setOrder] = useState<"asc" | "desc">(() => {
     const value = searchParams.get("order")
-    return value === "asc" || value === "desc" ? value : "asc"
+    return value === "asc" || value === "desc" ? value : "desc"
   })
 
   function handleUpdateQuery(
@@ -58,6 +94,12 @@ export default function FlashcardsPage() {
     router.push(`?${params.toString()}`)
   }
 
+    function createPageUrl(page: number) {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set("page", String(page))
+    return `?${params.toString()}`
+  }
+
   useEffect(() => {
     async function fetchData() {
       const res = await fetch(
@@ -67,9 +109,32 @@ export default function FlashcardsPage() {
 
       const data = await res.json()
 
-      const { flashcards }: { flashcards: FlashcardSet[] } = data
+      const {
+        flashcards,
+        pagination,
+      }: { flashcards: FlashcardSet[], pagination: PaginationMeta } = data
+
+      const requestedPage = parseInt(
+        searchParams.get("page") ?? "1"
+      )
+
+      if (
+        requestedPage > pagination.totalPages &&
+        pagination.totalPages > 0
+      ) {
+        handleUpdateQuery({
+          page: String(pagination.totalPages),
+        })
+        return
+      }
+
+      if (requestedPage < 1) {
+        handleUpdateQuery({ page: "1" })
+        return
+      }
 
       setFlashcards(flashcards)
+      setPagination(pagination)
     }
 
     fetchData()
@@ -82,108 +147,6 @@ export default function FlashcardsPage() {
         <h1>Flashcards</h1>
         <p>Lorem ipsum dolor sit amet consectetur.</p>
       </section>
-
-      {/* <section>
-        <div>
-          <Input
-            type="text"
-            placeholder="Search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleUpdateQuery({ search })
-              }
-            }}
-          />
-
-          <Button
-            type="button"
-            size="icon"
-            onClick={() => handleUpdateQuery({ search })}
-          >
-            <LucideSearch />
-          </Button>
-        </div>
-
-        <div>
-          <Label>Category:</Label>
-          <Select
-            value={category}
-            onValueChange={(value) => {
-              const v = value as CategoryFilter
-              setCategory(v)
-              handleUpdateQuery({
-                category: v === "all" ? undefined : v
-              })
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              {categories.map((c, i) => {
-                const cValue = c
-                  .replaceAll(" ", "_")
-                  .toLowerCase()
-                return (
-                  <SelectItem key={i} value={cValue}>
-                    {c}
-                  </SelectItem>
-                )
-              })}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Select
-          value={order}
-          onValueChange={(value) => {
-            const v = value as "asc" | "desc"
-            setOrder(v)
-            handleUpdateQuery({
-              order: v === "desc" || "asc" ? v : "asc" 
-            })
-          }}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Sort" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="asc">Newest</SelectItem>
-            <SelectItem value="desc">Oldest</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <div>
-          <Label>Visibility:</Label>
-
-          <RadioGroup
-            value={visibility}
-            onValueChange={(value) => {
-              const v = value as VisibilityFilter
-              setVisibility(v)
-              handleUpdateQuery({ visibility: v === "all" ? undefined : v })
-            }}
-          >
-            <Label className="flex items-center gap-2">
-              <RadioGroupItem value="all" />
-              All
-            </Label>
-
-            <Label className="flex items-center gap-2">
-              <RadioGroupItem value="private" />
-              Private
-            </Label>
-
-            <Label className="flex items-center gap-2">
-              <RadioGroupItem value="public" />
-              Public
-            </Label>
-          </RadioGroup>
-        </div>
-      </section> */}
 
       <section className="mb-8 flex flex-col gap-6 rounded-xl border bg-card p-6 shadow-sm">
         <div className="flex w-full gap-3">
@@ -260,7 +223,7 @@ export default function FlashcardsPage() {
 
           <div className="flex w-full justify-between gap-2">
             <Label className="whitespace-nowrap">
-              Visibilty:
+              Visibility:
             </Label>
 
             <RadioGroup
@@ -300,32 +263,6 @@ export default function FlashcardsPage() {
               </Link>
           </Button>
         </div>
-
-        {/* <div>
-          {flashcards.map((f) => (
-            <Card
-              key={f.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => router.push(`/flashcards/${f.id}`)}
-            >
-              <CardHeader>
-                <CardTitle>
-                  {f.title}
-                </CardTitle>
-
-                <CardDescription>
-                  {f.description}
-                </CardDescription>
-              </CardHeader>
-
-              <CardFooter>
-                <span>{f.visibility}</span>
-              </CardFooter>
-            </Card>
-          ))}
-        </div> */}
-
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 w-full">
           {flashcards.map((f) => (
@@ -380,6 +317,113 @@ export default function FlashcardsPage() {
             </Card>
           ))}
         </div>
+      </section>
+
+      <section className="mt-10 flex justify-center">
+        {pagination && pagination.totalPages > 1 && (
+          <Pagination>
+            <PaginationContent className="gap-1">
+              <PaginationItem>
+                <PaginationPrevious
+                  href={
+                    pagination.hasPreviousPage
+                      ? createPageUrl(
+                          pagination.currentPage - 1
+                        )
+                      : "#"
+                  }
+                  aria-disabled={
+                    !pagination.hasPreviousPage
+                  }
+                  className={
+                    !pagination.hasPreviousPage
+                      ? "pointer-events-none opacity-50"
+                      : "cursor-pointer"
+                  }
+                />
+              </PaginationItem>
+
+              {(() => {
+                const total = pagination.totalPages
+                const current = pagination.currentPage
+                const pages: (number | string)[] = []
+
+                pages.push(1)
+
+                if (current > 3) {
+                  pages.push("ellipsis-start")
+                }
+
+                const neighbors = [
+                  current - 1,
+                  current,
+                  current + 1,
+                ].filter(
+                  (p) => p > 1 && p < total
+                )
+
+                pages.push(...neighbors)
+
+                if (current < total - 2) {
+                  pages.push("ellipsis-end")
+                }
+
+                if (total > 1) {
+                  pages.push(total)
+                }
+
+                return pages.map((page, index) => {
+                  if (
+                    page === "ellipsis-start" ||
+                    page === "ellipsis-end"
+                  ) {
+                    return (
+                      <PaginationItem
+                        key={`ellipsis-${index}`}
+                      >
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    )
+                  }
+
+                  const pageNumber = page as number
+
+                  return (
+                    <PaginationItem key={pageNumber}>
+                      <PaginationLink
+                        href={createPageUrl(pageNumber)}
+                        isActive={
+                          pagination.currentPage ===
+                          pageNumber
+                        }
+                      >
+                        {pageNumber}
+                      </PaginationLink>
+                    </PaginationItem>
+                  )
+                })
+              })()}
+
+              <PaginationItem>
+                <PaginationNext
+                  href={
+                    pagination.hasNextPage
+                      ? createPageUrl(
+                          pagination.currentPage + 1
+                        )
+                      : "#"
+                  }
+                  aria-disabled={!pagination.hasNextPage}
+                  className={
+                    !pagination.hasNextPage
+                      ? "pointer-events-none opacity-50"
+                      : "cursor-pointer"
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        )}
       </section>
     </>
   )

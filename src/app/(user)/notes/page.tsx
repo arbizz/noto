@@ -7,6 +7,7 @@ import { Heart, LucideEye, LucidePlus, LucideSearch } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import {
   RadioGroup,
   RadioGroupItem,
@@ -37,7 +38,6 @@ import {
 
 import { categories } from "@/data/user"
 import { ContentCategory, Note, Visibility } from "@/generated/prisma/client"
-import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 
 type CategoryFilter = ContentCategory | "all"
@@ -221,7 +221,7 @@ export default function NotesPage() {
 
           <div className="flex w-full justify-between gap-2">
             <Label className="whitespace-nowrap">
-              Visibilty:
+              Visibility:
             </Label>
 
             <RadioGroup
