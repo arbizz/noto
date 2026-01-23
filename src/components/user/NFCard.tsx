@@ -5,21 +5,45 @@ import { LucideEye, LucideHeart, LucideBookmark } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter, CardAction } from "../ui/card"
 import { Badge } from "../ui/badge"
 import { Button } from "../ui/button"
-import { useSession } from "next-auth/react"
+
+type NoteWithExtras = Note & {
+  user?: {
+    id: number
+    name: string
+    image: string | null
+  }
+  _count?: {
+    likes: number
+  }
+  isBookmarked?: boolean
+}
+
+type FlashcardSetWithExtras = FlashcardSet & {
+  user?: {
+    id: number
+    name: string
+    image: string | null
+  }
+  _count?: {
+    likes: number
+  }
+  isBookmarked?: boolean
+}
 
 function NFCard({
   content,
   onClick,
   onBookmark,
+  showBookmark = false,
   ...props
 }: {
-  content: Note | FlashcardSet
+  content: NoteWithExtras | FlashcardSetWithExtras
   onClick: () => void
-  onBookmark?: () => void
-  onLike?: () => void
+  onBookmark?: (e: React.MouseEvent) => void
+  showBookmark?: boolean
 }) {
-  const { data: session } = useSession()
-  const isOwner = Number(session?.user.id) === content.userId
+  const likesCount = content._count?.likes ?? 0
+  const isBookmarked = content.isBookmarked ?? false
 
   return (
     <Card
@@ -46,15 +70,18 @@ function NFCard({
           </CardDescription>
         )}
 
-        <CardAction>
-          {isOwner && <Button
-            variant="ghost"
-            size="icon"
-            onClick={onBookmark}
-          >
-            <LucideBookmark />
-          </Button>}
-        </CardAction>
+        {showBookmark && onBookmark && (
+          <CardAction>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onBookmark}
+              className={isBookmarked ? "text-primary" : ""}
+            >
+              <LucideBookmark className={isBookmarked ? "fill-current" : ""} />
+            </Button>
+          </CardAction>
+        )}
       </CardHeader>
       
       <CardFooter className="flex items-center justify-between pt-3 text-sm">
@@ -72,10 +99,12 @@ function NFCard({
           </Badge>
         </div>
 
-        {content.visibility === "public" && <div className="flex items-center gap-1 text-muted-foreground">
-          <LucideHeart className="h-4 w-4 group-hover:text-primary transition-colors" />
-          <span className="text-xs font-medium">{}</span>
-        </div>}
+        {content.visibility === "public" && (
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <LucideHeart className="h-4 w-4 group-hover:text-primary transition-colors" />
+            <span className="text-xs font-medium">{likesCount}</span>
+          </div>
+        )}
       </CardFooter>
     </Card>
   )

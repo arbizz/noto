@@ -46,6 +46,9 @@ function UserSidebar() {
             <SidebarLink href="/discover" label="Discover">
               <LucideSquare size={24} className="size-fit" />
             </SidebarLink>
+            <SidebarLink href="/bookmarks" label="Bookmarks">
+              <LucideSquare size={24} className="size-fit" />
+            </SidebarLink>
           </nav>
         </div>
         <div className="p-3">

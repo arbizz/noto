@@ -12,7 +12,6 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationEllipsis, PaginationLink, PaginationNext } from "@/components/ui/pagination"
 import { NFCard } from "@/components/user/NFCard"
-import { toast } from "sonner"
 
 type CategoryFilter = ContentCategory | "all"
 
@@ -34,7 +33,6 @@ type NoteWithUser = Note & {
   _count: {
     likes: number
   }
-  isBookmarked: boolean
 }
 
 type FlashcardSetWithUser = FlashcardSet & {
@@ -46,10 +44,9 @@ type FlashcardSetWithUser = FlashcardSet & {
   _count: {
     likes: number
   }
-  isBookmarked: boolean
 }
 
-export default function DiscoverPage() {
+export default function BookmarksPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -100,71 +97,17 @@ export default function DiscoverPage() {
     return `?${params.toString()}`
   }
 
-  async function handleToggleBookmark(
-    contentId: number,
-    contentType: "note" | "flashcard",
-    e: React.MouseEvent
-  ) {
-    e.stopPropagation()
-
-    try {
-      const res = await fetch("/api/bookmarks/toggle", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          contentId,
-          contentType
-        })
-      })
-
-      if (!res.ok) {
-        throw new Error("Failed to toggle bookmark")
-      }
-
-      const data = await res.json()
-
-      // Update local state
-      if (contentType === "note") {
-        setNotes(prev =>
-          prev.map(note =>
-            note.id === contentId
-              ? { ...note, isBookmarked: data.isBookmarked }
-              : note
-          )
-        )
-      } else {
-        setFlashcards(prev =>
-          prev.map(flashcard =>
-            flashcard.id === contentId
-              ? { ...flashcard, isBookmarked: data.isBookmarked }
-              : flashcard
-          )
-        )
-      }
-
-      const notif = data.isBookmarked ? "Bookmarked" : "Bookmark removed"
-      toast(notif, {
-        description: data.message
-      })
-    } catch (error) {
-      console.error("Error toggling bookmark:", error)
-      toast.error("Error")
-    }
-  }
-
   useEffect(() => {
     async function fetchData() {
       setIsLoading(true)
       try {
         const res = await fetch(
-          `/api/discover?${searchParams.toString()}`,
+          `/api/bookmarks?${searchParams.toString()}`,
           { method: "GET" }
         )
 
         if (!res.ok) {
-          throw new Error("Failed to fetch data")
+          throw new Error("Failed to fetch bookmarks")
         }
 
         const data = await res.json()
@@ -217,7 +160,7 @@ export default function DiscoverPage() {
         setNPagination(pagination.npagination)
         setFPagination(pagination.fpagination)
       } catch (error) {
-        console.error("Error fetching discover data:", error)
+        console.error("Error fetching bookmarks:", error)
         setNotes([])
         setFlashcards([])
         setNPagination(null)
@@ -235,8 +178,8 @@ export default function DiscoverPage() {
   return (
     <>
       <section className="mb-6 flex flex-col gap-1">
-        <h1>Discover</h1>
-        <p>Explore public notes and flashcards from the community</p>
+        <h1>Bookmarks</h1>
+        <p>Your saved notes and flashcards</p>
       </section>
 
       <section className="mb-8 flex flex-col gap-6 rounded-xl border bg-card p-6 shadow-sm">
@@ -336,7 +279,7 @@ export default function DiscoverPage() {
               </div>
             ) : notes.length === 0 ? (
               <div className="flex items-center justify-center py-12">
-                <p className="text-muted-foreground">No notes found</p>
+                <p className="text-muted-foreground">No bookmarked notes found</p>
               </div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 w-full">
@@ -344,9 +287,7 @@ export default function DiscoverPage() {
                   <NFCard 
                     key={n.id} 
                     content={n} 
-                    onClick={() => router.push(`/notes/${n.id}`)}
-                    onBookmark={(e) => handleToggleBookmark(n.id, "note", e)}
-                    showBookmark
+                    onClick={() => router.push(`/notes/${n.id}`)} 
                   />
                 ))}
               </div>
@@ -360,7 +301,7 @@ export default function DiscoverPage() {
               </div>
             ) : flashcards.length === 0 ? (
               <div className="flex items-center justify-center py-12">
-                <p className="text-muted-foreground">No flashcards found</p>
+                <p className="text-muted-foreground">No bookmarked flashcards found</p>
               </div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 w-full">
@@ -368,9 +309,7 @@ export default function DiscoverPage() {
                   <NFCard 
                     key={f.id} 
                     content={f} 
-                    onClick={() => router.push(`/flashcards/${f.id}`)}
-                    onBookmark={(e) => handleToggleBookmark(f.id, "flashcard", e)}
-                    showBookmark
+                    onClick={() => router.push(`/flashcards/${f.id}`)} 
                   />
                 ))}
               </div>

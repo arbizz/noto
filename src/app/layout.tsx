@@ -1,5 +1,6 @@
 import "@/styles/globals.css"
 import { Metadata } from "next"
+import { SessionProvider } from "next-auth/react"
 import { Poppins, Inter, JetBrains_Mono } from "next/font/google"
 import { Toaster } from "sonner"
 
@@ -32,10 +33,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${poppins.variable} ${inter.variable} ${jetbrainsMono.variable}`}>
-      <body>
-        {children}
-        <Toaster position="top-right" />
-      </body>
+      <SessionProvider>
+        <body>
+          {children}
+          <Toaster position="top-right" />
+        </body>
+      </SessionProvider>
     </html>
   )
 }

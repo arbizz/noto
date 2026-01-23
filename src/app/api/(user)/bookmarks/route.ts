@@ -44,92 +44,113 @@ export async function GET(req: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    // Base where clause
+    // Base where clause for bookmarks
     const baseWhere = {
-      visibility: "public" as const,
-      ...(category && { category }),
-      ...(search && { title: { contains: search } }),
-      NOT: { userId }
+      userId,
+      ...(category && {
+        OR: [
+          { note: { category } },
+          { flashcardSet: { category } }
+        ]
+      })
     }
 
-    // Count total items
+    // Count total bookmarked items
     const [totalNotesCount, totalFlashcardsCount] = await Promise.all([
-      prisma.note.count({ where: baseWhere }),
-      prisma.flashcardSet.count({ where: baseWhere })
+      prisma.bookmark.count({
+        where: {
+          ...baseWhere,
+          contentType: "note",
+          note: {
+            ...(search && { title: { contains: search } })
+          }
+        }
+      }),
+      prisma.bookmark.count({
+        where: {
+          ...baseWhere,
+          contentType: "flashcard",
+          flashcardSet: {
+            ...(search && { title: { contains: search } })
+          }
+        }
+      })
     ])
 
-    // Fetch data
-    const [notes, flashcards] = await Promise.all([
-      prisma.note.findMany({
-        select: {
-          id: true,
-          userId: true,
-          title: true,
-          description: true,
-          visibility: true,
-          category: true,
-          createdAt: true,
-          updatedAt: true,
-          user: {
+    // Fetch bookmarked data
+    const [noteBookmarks, flashcardBookmarks] = await Promise.all([
+      prisma.bookmark.findMany({
+        where: {
+          ...baseWhere,
+          contentType: "note",
+          note: {
+            ...(search && { title: { contains: search } })
+          }
+        },
+        include: {
+          note: {
             select: {
               id: true,
-              name: true,
-              image: true
-            }
-          },
-          _count: {
-            select: {
-              likes: true
-            }
-          },
-          bookmarks: {
-            where: {
-              userId
-            },
-            select: {
-              id: true
+              title: true,
+              description: true,
+              visibility: true,
+              category: true,
+              createdAt: true,
+              updatedAt: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  image: true
+                }
+              },
+              _count: {
+                select: {
+                  likes: true
+                }
+              }
             }
           }
         },
-        where: baseWhere,
         orderBy: {
           createdAt: order
         },
         skip,
         take: limit
       }),
-      prisma.flashcardSet.findMany({
-        select: {
-          id: true,
-          userId: true,
-          title: true,
-          description: true,
-          visibility: true,
-          category: true,
-          createdAt: true,
-          updatedAt: true,
-          user: {
+      prisma.bookmark.findMany({
+        where: {
+          ...baseWhere,
+          contentType: "flashcard",
+          flashcardSet: {
+            ...(search && { title: { contains: search } })
+          }
+        },
+        include: {
+          flashcardSet: {
             select: {
               id: true,
-              name: true,
-              image: true
-            }
-          },
-          _count: {
-            select: {
-              likes: true
-            }
-          },
-          bookmarks: {
-            where: {
-              userId
-            },
-            select: {
-              id: true
+              title: true,
+              description: true,
+              visibility: true,
+              category: true,
+              createdAt: true,
+              updatedAt: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  image: true
+                }
+              },
+              _count: {
+                select: {
+                  likes: true
+                }
+              }
             }
           }
         },
-        where: baseWhere,
         orderBy: {
           createdAt: order
         },
@@ -138,18 +159,14 @@ export async function GET(req: NextRequest) {
       })
     ])
 
-    // Add isBookmarked flag
-    const notesWithBookmark = notes.map(note => ({
-      ...note,
-      isBookmarked: note.bookmarks.length > 0,
-      bookmarks: undefined
-    }))
+    // Extract notes and flashcards from bookmarks
+    const notes = noteBookmarks
+      .map(b => b.note)
+      .filter(n => n !== null)
 
-    const flashcardsWithBookmark = flashcards.map(flashcard => ({
-      ...flashcard,
-      isBookmarked: flashcard.bookmarks.length > 0,
-      bookmarks: undefined
-    }))
+    const flashcards = flashcardBookmarks
+      .map(b => b.flashcardSet)
+      .filter(f => f !== null)
 
     // Calculate pagination
     const totalNPages = Math.ceil(totalNotesCount / limit)
@@ -157,8 +174,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(
       {
-        notes: notesWithBookmark,
-        flashcards: flashcardsWithBookmark,
+        notes,
+        flashcards,
         pagination: {
           npagination: {
             totalItems: totalNotesCount,
@@ -181,7 +198,7 @@ export async function GET(req: NextRequest) {
       { status: 200 }
     )
   } catch (err) {
-    console.error("Discover API error:", err)
+    console.error("Bookmarks API error:", err)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
