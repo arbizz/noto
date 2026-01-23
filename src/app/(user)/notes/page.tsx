@@ -2,23 +2,15 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Heart, LucideEye, LucidePlus, LucideSearch } from "lucide-react"
+import { LucidePlus, LucideSearch } from "lucide-react"
 
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import {
   RadioGroup,
   RadioGroupItem,
 } from "@/components/ui/radio-group"
-import {
-  Card,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import {
   Select,
   SelectContent,
@@ -39,6 +31,7 @@ import {
 import { categories } from "@/data/user"
 import { ContentCategory, Note, Visibility } from "@/generated/prisma/client"
 import Link from "next/link"
+import { NFCard } from "@/components/user/NFCard"
 
 type CategoryFilter = ContentCategory | "all"
 
@@ -264,54 +257,7 @@ export default function NotesPage() {
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 w-full">
           {notes.map((n) => (
-            <Card
-              key={n.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => router.push(`/notes/${n.id}`)}
-              className="
-                group cursor-pointer
-                transition-all
-                hover:border-primary/40
-                hover:shadow-md
-                focus-visible:ring-2 focus-visible:ring-ring
-              "
-            >
-              <CardHeader className="gap-2">
-                <div className="flex items-start justify-between gap-2">
-                  <CardTitle className="line-clamp-2 text-base font-semibold">
-                    {n.title}
-                  </CardTitle>
-                </div>
-          
-                {n.description && (
-                  <CardDescription className="line-clamp-3 text-sm">
-                    {n.description}
-                  </CardDescription>
-                )}
-              </CardHeader>
-              
-              <CardFooter className="flex items-center justify-between pt-3 text-sm">
-                <div className="flex flex-wrap gap-2">
-                  <Badge className="capitalize">
-                    {n.category.replaceAll("_", " ")}
-                  </Badge>
-              
-                  <Badge
-                    variant="secondary"
-                    className="capitalize"
-                  >
-                    <LucideEye />
-                    {n.visibility}
-                  </Badge>
-                </div>
-
-                {n.visibility === "public" && <div className="flex items-center gap-1 text-muted-foreground">
-                  <Heart className="h-4 w-4 group-hover:text-primary transition-colors" />
-                  <span className="text-xs font-medium">{n.likes}</span>
-                </div>}
-              </CardFooter>
-            </Card>
+            <NFCard key={n.id} content={n} onClick={() => router.push(`/notes/${n.id}`)} />
           ))}
         </div>
       </section>

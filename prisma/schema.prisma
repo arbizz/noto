@@ -31,6 +31,7 @@ model User {
   flashcardSets  FlashcardSet[]
   reports        Report[]
   testimonials   Testimonial[]
+  likes          Like[]
 
   @@map("users")
 }
@@ -89,7 +90,6 @@ model FlashcardSet {
   title         String          @default("Untitled") @db.VarChar(150)
   description   String?         @db.Text
   flashcards    Json
-  likes         Int             @default(0)
   visibility    Visibility      @default(private)
   category      ContentCategory @default(other)
   createdAt     DateTime        @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP")) @map("created_at")
@@ -98,6 +98,7 @@ model FlashcardSet {
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   reports     Report[]
   bookmarks   Bookmark[]
+  likes       Like[]
 
   @@map("flashcard_set")
 }
@@ -108,7 +109,6 @@ model Note {
   title       String          @default("Untitled") @db.VarChar(150)
   description String?         @db.Text
   content     Json
-  likes       Int             @default(0)
   visibility  Visibility      @default(private)
   category    ContentCategory @default(other)
   createdAt   DateTime        @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP")) @map("created_at")
@@ -117,8 +117,25 @@ model Note {
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   reports     Report[]
   bookmarks   Bookmark[]
+  likes       Like[]
 
   @@map("notes")
+}
+
+model Like {
+  id               Int          @id @default(autoincrement())
+  userId           Int          @map("user_id")
+  noteId           Int?         @map("note_id")
+  flashcardSetId   Int?         @map("flashcard_set_id")
+  contentType      ContentType  @map("content_type")
+  createdAt        DateTime     @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP")) @map("created_at")
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note          Note?         @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  flashcardSet  FlashcardSet? @relation(fields: [flashcardSetId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, noteId, flashcardSetId])
+  @@map("likes")
 }
 
 model Report {

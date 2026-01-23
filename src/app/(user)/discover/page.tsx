@@ -7,12 +7,11 @@ import { categories } from "@/data/user"
 import { FlashcardSet, Note } from "@/generated/prisma/client"
 import { ContentCategory } from "@/generated/prisma/enums"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-import { Heart, LucideEye, LucideSearch } from "lucide-react"
+import { LucideSearch } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationEllipsis, PaginationLink, PaginationNext } from "@/components/ui/pagination"
+import { NFCard } from "@/components/user/NFCard"
 
 type CategoryFilter = ContentCategory | "all"
 
@@ -229,109 +228,14 @@ export default function DiscoverPage() {
           <TabsContent value="note" className="mt-6">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 w-full">
               {notes.map((n) => (
-                <Card
-                  key={n.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => router.push(`/notes/${n.id}`)}
-                  className="
-                    group cursor-pointer
-                    transition-all
-                    hover:border-primary/40
-                    hover:shadow-md
-                    focus-visible:ring-2 focus-visible:ring-ring
-                  "
-                >
-                  <CardHeader className="gap-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <CardTitle className="line-clamp-2 text-base font-semibold">
-                        {n.title}
-                      </CardTitle>
-                    </div>
-              
-                    {n.description && (
-                      <CardDescription className="line-clamp-3 text-sm">
-                        {n.description}
-                      </CardDescription>
-                    )}
-                  </CardHeader>
-                  
-                  <CardFooter className="flex items-center justify-between pt-3 text-sm">
-                    <div className="flex flex-wrap gap-2">
-                      <Badge className="capitalize">
-                        {n.category.replaceAll("_", " ")}
-                      </Badge>
-                  
-                      <Badge
-                        variant="secondary"
-                        className="capitalize"
-                      >
-                        <LucideEye />
-                        {n.visibility}
-                      </Badge>
-                    </div>
-                  
-                    {n.visibility === "public" && <div className="flex items-center gap-1 text-muted-foreground">
-                      <Heart className="h-4 w-4 group-hover:text-primary transition-colors" />
-                      <span className="text-xs font-medium">{n.likes}</span>
-                    </div>}
-                  </CardFooter>
-                </Card>
+                <NFCard key={n.id} content={n} onClick={() => router.push(`/notes/${n.id}`)} />
               ))}
             </div>
           </TabsContent>
           <TabsContent value="card" className="mt-6">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 w-full">
               {flashcards.map((f) => (
-                <Card
-                  key={f.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => router.push(`/flashcards/${f.id}`)}
-                  className="
-                    group cursor-pointer
-                    transition-all
-                    hover:border-primary/40
-                    hover:shadow-md
-                    focus-visible:ring-2 focus-visible:ring-ring
-                  "
-                >
-                  <CardHeader className="gap-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <CardTitle className="line-clamp-2 text-base font-semibold">
-                        {f.title}
-                      </CardTitle>
-                    </div>
-              
-                    {f.description && (
-                      <CardDescription className="line-clamp-3 text-sm">
-                        {f.description}
-                      </CardDescription>
-                    )}
-                  </CardHeader>
-                  
-                  <CardFooter className="flex items-center justify-between pt-3 text-sm">
-                    <div className="flex flex-wrap gap-2">
-                      {f.category && (
-                        <Badge className="capitalize">
-                          {f.category.replaceAll("_", " ")}
-                        </Badge>
-                      )}
-
-                      <Badge variant="secondary" className="capitalize flex items-center gap-1">
-                        <LucideEye className="h-4 w-4" />
-                        {f.visibility}
-                      </Badge>
-                    </div>
-                    
-                    {f.visibility === "public" && (
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Heart className="h-4 w-4 group-hover:text-primary transition-colors" />
-                        <span className="text-xs font-medium">{f.likes}</span>
-                      </div>
-                    )}
-                  </CardFooter>
-                </Card>
+                <NFCard key={f.id} content={f} onClick={() => router.push(`/flashcards/${f.id}`)} />
               ))}
             </div>
           </TabsContent>
