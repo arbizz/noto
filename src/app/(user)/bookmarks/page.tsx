@@ -12,6 +12,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationEllipsis, PaginationLink, PaginationNext } from "@/components/ui/pagination"
 import { NFCard } from "@/components/user/NFCard"
+import { toast } from "sonner"
 
 type CategoryFilter = ContentCategory | "all"
 
@@ -33,6 +34,8 @@ type NoteWithUser = Note & {
   _count: {
     likes: number
   }
+  isBookmarked: boolean
+  isLiked: boolean
 }
 
 type FlashcardSetWithUser = FlashcardSet & {
@@ -44,6 +47,8 @@ type FlashcardSetWithUser = FlashcardSet & {
   _count: {
     likes: number
   }
+  isBookmarked: boolean
+  isLiked: boolean
 }
 
 export default function BookmarksPage() {
@@ -97,6 +102,73 @@ export default function BookmarksPage() {
     return `?${params.toString()}`
   }
 
+  async function handleToggleLike(
+    contentId: number,
+    contentType: "note" | "flashcard",
+    e: React.MouseEvent
+  ) {
+    e.stopPropagation()
+
+    try {
+      const res = await fetch("/api/likes/toggle", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          contentId,
+          contentType
+        })
+      })
+
+      if (!res.ok) {
+        throw new Error("Failed to toggle like")
+      }
+
+      const data = await res.json()
+
+      if (contentType === "note") {
+        setNotes(prev =>
+          prev.map(note =>
+            note.id === contentId
+              ? { 
+                  ...note, 
+                  isLiked: data.isLiked,
+                  _count: {
+                    ...note._count,
+                    likes: note._count.likes + (data.isLiked ? 1 : -1)
+                  }
+                }
+              : note
+          )
+        )
+      } else {
+        setFlashcards(prev =>
+          prev.map(flashcard =>
+            flashcard.id === contentId
+              ? { 
+                  ...flashcard, 
+                  isLiked: data.isLiked,
+                  _count: {
+                    ...flashcard._count,
+                    likes: flashcard._count.likes + (data.isLiked ? 1 : -1)
+                  }
+                }
+              : flashcard
+          )
+        )
+      }
+
+      const notif = data.isLiked ? "Liked" : "Like removed"
+      toast(notif, {
+        description: data.message
+      })
+    } catch (error) {
+      console.error("Error toggling like:", error)
+      toast.error("Error toggling like")
+    }
+  }
+
   useEffect(() => {
     async function fetchData() {
       setIsLoading(true)
@@ -127,7 +199,6 @@ export default function BookmarksPage() {
 
         const requestedPage = parseInt(searchParams.get("page") ?? "1")
 
-        // Auto-correct invalid page numbers
         if (type === "note") {
           if (
             requestedPage > pagination.npagination.totalPages &&
@@ -287,7 +358,9 @@ export default function BookmarksPage() {
                   <NFCard 
                     key={n.id} 
                     content={n} 
-                    onClick={() => router.push(`/notes/${n.id}`)} 
+                    onClick={() => router.push(`/notes/${n.id}`)}
+                    onLike={(e) => handleToggleLike(n.id, "note", e)}
+                    showLike
                   />
                 ))}
               </div>
@@ -309,7 +382,9 @@ export default function BookmarksPage() {
                   <NFCard 
                     key={f.id} 
                     content={f} 
-                    onClick={() => router.push(`/flashcards/${f.id}`)} 
+                    onClick={() => router.push(`/flashcards/${f.id}`)}
+                    onLike={(e) => handleToggleLike(f.id, "flashcard", e)}
+                    showLike
                   />
                 ))}
               </div>

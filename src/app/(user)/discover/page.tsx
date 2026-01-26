@@ -35,6 +35,7 @@ type NoteWithUser = Note & {
     likes: number
   }
   isBookmarked: boolean
+  isLiked: boolean
 }
 
 type FlashcardSetWithUser = FlashcardSet & {
@@ -47,6 +48,7 @@ type FlashcardSetWithUser = FlashcardSet & {
     likes: number
   }
   isBookmarked: boolean
+  isLiked: boolean
 }
 
 export default function DiscoverPage() {
@@ -125,7 +127,6 @@ export default function DiscoverPage() {
 
       const data = await res.json()
 
-      // Update local state
       if (contentType === "note") {
         setNotes(prev =>
           prev.map(note =>
@@ -150,7 +151,74 @@ export default function DiscoverPage() {
       })
     } catch (error) {
       console.error("Error toggling bookmark:", error)
-      toast.error("Error")
+      toast.error("Error toggling bookmark")
+    }
+  }
+
+  async function handleToggleLike(
+    contentId: number,
+    contentType: "note" | "flashcard",
+    e: React.MouseEvent
+  ) {
+    e.stopPropagation()
+
+    try {
+      const res = await fetch("/api/likes/toggle", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          contentId,
+          contentType
+        })
+      })
+
+      if (!res.ok) {
+        throw new Error("Failed to toggle like")
+      }
+
+      const data = await res.json()
+
+      if (contentType === "note") {
+        setNotes(prev =>
+          prev.map(note =>
+            note.id === contentId
+              ? { 
+                  ...note, 
+                  isLiked: data.isLiked,
+                  _count: {
+                    ...note._count,
+                    likes: note._count.likes + (data.isLiked ? 1 : -1)
+                  }
+                }
+              : note
+          )
+        )
+      } else {
+        setFlashcards(prev =>
+          prev.map(flashcard =>
+            flashcard.id === contentId
+              ? { 
+                  ...flashcard, 
+                  isLiked: data.isLiked,
+                  _count: {
+                    ...flashcard._count,
+                    likes: flashcard._count.likes + (data.isLiked ? 1 : -1)
+                  }
+                }
+              : flashcard
+          )
+        )
+      }
+
+      const notif = data.isLiked ? "Liked" : "Like removed"
+      toast(notif, {
+        description: data.message
+      })
+    } catch (error) {
+      console.error("Error toggling like:", error)
+      toast.error("Error toggling like")
     }
   }
 
@@ -184,7 +252,6 @@ export default function DiscoverPage() {
 
         const requestedPage = parseInt(searchParams.get("page") ?? "1")
 
-        // Auto-correct invalid page numbers
         if (type === "note") {
           if (
             requestedPage > pagination.npagination.totalPages &&
@@ -346,7 +413,9 @@ export default function DiscoverPage() {
                     content={n} 
                     onClick={() => router.push(`/notes/${n.id}`)}
                     onBookmark={(e) => handleToggleBookmark(n.id, "note", e)}
+                    onLike={(e) => handleToggleLike(n.id, "note", e)}
                     showBookmark
+                    showLike
                   />
                 ))}
               </div>
@@ -370,7 +439,9 @@ export default function DiscoverPage() {
                     content={f} 
                     onClick={() => router.push(`/flashcards/${f.id}`)}
                     onBookmark={(e) => handleToggleBookmark(f.id, "flashcard", e)}
+                    onLike={(e) => handleToggleLike(f.id, "flashcard", e)}
                     showBookmark
+                    showLike
                   />
                 ))}
               </div>
@@ -385,90 +456,89 @@ export default function DiscoverPage() {
             <PaginationContent className="gap-1">
               <PaginationItem>
                 <PaginationPrevious
-                  href={
-                    activePagination.hasPreviousPage
-                      ? createPageUrl(activePagination.currentPage - 1)
-                      : "#"
-                  }
-                  aria-disabled={!activePagination.hasPreviousPage}
-                  className={
-                    !activePagination.hasPreviousPage
-                      ? "pointer-events-none opacity-50"
-                      : "cursor-pointer"
-                  }
-                />
-              </PaginationItem>
+                href={
+                activePagination.hasPreviousPage
+                  ? createPageUrl(activePagination.currentPage - 1)
+                  : "#"
+              }
+              aria-disabled={!activePagination.hasPreviousPage}
+              className={
+                !activePagination.hasPreviousPage
+                  ? "pointer-events-none opacity-50"
+                  : "cursor-pointer"
+              }
+            />
+          </PaginationItem>
 
-              {(() => {
-                const total = activePagination.totalPages
-                const current = activePagination.currentPage
-                const pages: (number | string)[] = []
+          {(() => {
+            const total = activePagination.totalPages
+            const current = activePagination.currentPage
+            const pages: (number | string)[] = []
 
-                pages.push(1)
+            pages.push(1)
 
-                if (current > 3) {
-                  pages.push("ellipsis-start")
+            if (current > 3) {
+              pages.push("ellipsis-start")
+            }
+
+            const neighbors = [
+              current - 1,
+              current,
+              current + 1,
+            ].filter((p) => p > 1 && p < total)
+
+            pages.push(...neighbors)
+
+            if (current < total - 2) {
+              pages.push("ellipsis-end")
+            }
+
+            if (total > 1) {
+              pages.push(total)
+            }
+
+            return pages.map((page, index) => {
+              if (page === "ellipsis-start" || page === "ellipsis-end") {
+                return (
+                  <PaginationItem key={`ellipsis-${index}`}>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )
+              }
+
+              const pageNumber = page as number
+
+              return (
+                <PaginationItem key={pageNumber}>
+                  <PaginationLink
+                    href={createPageUrl(pageNumber)}
+                    isActive={activePagination.currentPage === pageNumber}
+                  >
+                    {pageNumber}
+                  </PaginationLink>
+                </PaginationItem>
+              )
+            })
+          })()}
+
+            <PaginationItem>
+              <PaginationNext
+                href={
+                  activePagination.hasNextPage
+                    ? createPageUrl(activePagination.currentPage + 1)
+                    : "#"
                 }
-
-                const neighbors = [
-                  current - 1,
-                  current,
-                  current + 1,
-                ].filter((p) => p > 1 && p < total)
-
-                pages.push(...neighbors)
-
-                if (current < total - 2) {
-                  pages.push("ellipsis-end")
+                aria-disabled={!activePagination.hasNextPage}
+                className={
+                  !activePagination.hasNextPage
+                    ? "pointer-events-none opacity-50"
+                    : "cursor-pointer"
                 }
-
-                if (total > 1) {
-                  pages.push(total)
-                }
-
-                return pages.map((page, index) => {
-                  if (page === "ellipsis-start" || page === "ellipsis-end") {
-                    return (
-                      <PaginationItem key={`ellipsis-${index}`}>
-                        <PaginationEllipsis />
-                      </PaginationItem>
-                    )
-                  }
-
-                  const pageNumber = page as number
-
-                  return (
-                    <PaginationItem key={pageNumber}>
-                      <PaginationLink
-                        href={createPageUrl(pageNumber)}
-                        isActive={activePagination.currentPage === pageNumber}
-                      >
-                        {pageNumber}
-                      </PaginationLink>
-                    </PaginationItem>
-                  )
-                })
-              })()}
-
-              <PaginationItem>
-                <PaginationNext
-                  href={
-                    activePagination.hasNextPage
-                      ? createPageUrl(activePagination.currentPage + 1)
-                      : "#"
-                  }
-                  aria-disabled={!activePagination.hasNextPage}
-                  className={
-                    !activePagination.hasNextPage
-                      ? "pointer-events-none opacity-50"
-                      : "cursor-pointer"
-                  }
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </section>
-      )}
-    </>
-  )
-}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </section>
+    )}
+  </>
+)}

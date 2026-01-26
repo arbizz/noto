@@ -16,6 +16,7 @@ type NoteWithExtras = Note & {
     likes: number
   }
   isBookmarked?: boolean
+  isLiked?: boolean
 }
 
 type FlashcardSetWithExtras = FlashcardSet & {
@@ -28,22 +29,28 @@ type FlashcardSetWithExtras = FlashcardSet & {
     likes: number
   }
   isBookmarked?: boolean
+  isLiked?: boolean
 }
 
 function NFCard({
   content,
   onClick,
   onBookmark,
+  onLike,
   showBookmark = false,
+  showLike = false,
   ...props
 }: {
   content: NoteWithExtras | FlashcardSetWithExtras
   onClick: () => void
   onBookmark?: (e: React.MouseEvent) => void
+  onLike?: (e: React.MouseEvent) => void
   showBookmark?: boolean
+  showLike?: boolean
 }) {
   const likesCount = content._count?.likes ?? 0
   const isBookmarked = content.isBookmarked ?? false
+  const isLiked = content.isLiked ?? false
 
   return (
     <Card
@@ -70,16 +77,31 @@ function NFCard({
           </CardDescription>
         )}
 
-        {showBookmark && onBookmark && (
+        {(showBookmark || showLike) && (
           <CardAction>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onBookmark}
-              className={isBookmarked ? "text-primary" : ""}
-            >
-              <LucideBookmark className={isBookmarked ? "fill-current" : ""} />
-            </Button>
+            <div className="flex gap-1">
+              {showLike && onLike && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onLike}
+                  className={isLiked ? "text-red-500" : ""}
+                >
+                  <LucideHeart className={isLiked ? "fill-current" : ""} />
+                </Button>
+              )}
+              
+              {showBookmark && onBookmark && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onBookmark}
+                  className={isBookmarked ? "text-primary" : ""}
+                >
+                  <LucideBookmark className={isBookmarked ? "fill-current" : ""} />
+                </Button>
+              )}
+            </div>
           </CardAction>
         )}
       </CardHeader>
@@ -101,7 +123,7 @@ function NFCard({
 
         {content.visibility === "public" && (
           <div className="flex items-center gap-1 text-muted-foreground">
-            <LucideHeart className="h-4 w-4 group-hover:text-primary transition-colors" />
+            <LucideHeart className="h-4 w-4 group-hover:text-red-500 transition-colors" />
             <span className="text-xs font-medium">{likesCount}</span>
           </div>
         )}

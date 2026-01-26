@@ -22,54 +22,39 @@ export async function GET(req: NextRequest) {
     const rawPage = searchParams.get("page")
     const limit = 12
 
-    // Validate category
     const category = rawCategory && Object.values(ContentCategory).includes(rawCategory as ContentCategory)
       ? (rawCategory as ContentCategory)
       : undefined
 
-    // Validate order
     const order: "asc" | "desc" = rawOrder === "asc" 
       ? "asc" 
       : "desc"
 
-    // Validate search
     const search = rawSearch && rawSearch.trim().length > 0
       ? rawSearch.trim()
       : undefined
 
-    // Validate page
     const page = rawPage && !isNaN(Number(rawPage)) && Number(rawPage) > 0
       ? Number(rawPage)
       : 1
 
     const skip = (page - 1) * limit
 
-    // Base where clause
     const baseWhere = {
       visibility: "public" as const,
       ...(category && { category }),
-      ...(search && { title: { contains: search } }),
-      NOT: { userId }
+      ...(search && { title: { contains: search } })
     }
 
-    // Count total items
     const [totalNotesCount, totalFlashcardsCount] = await Promise.all([
       prisma.note.count({ where: baseWhere }),
       prisma.flashcardSet.count({ where: baseWhere })
     ])
 
-    // Fetch data
     const [notes, flashcards] = await Promise.all([
       prisma.note.findMany({
-        select: {
-          id: true,
-          userId: true,
-          title: true,
-          description: true,
-          visibility: true,
-          category: true,
-          createdAt: true,
-          updatedAt: true,
+        where: baseWhere,
+        include: {
           user: {
             select: {
               id: true,
@@ -81,17 +66,8 @@ export async function GET(req: NextRequest) {
             select: {
               likes: true
             }
-          },
-          bookmarks: {
-            where: {
-              userId
-            },
-            select: {
-              id: true
-            }
           }
         },
-        where: baseWhere,
         orderBy: {
           createdAt: order
         },
@@ -99,15 +75,8 @@ export async function GET(req: NextRequest) {
         take: limit
       }),
       prisma.flashcardSet.findMany({
-        select: {
-          id: true,
-          userId: true,
-          title: true,
-          description: true,
-          visibility: true,
-          category: true,
-          createdAt: true,
-          updatedAt: true,
+        where: baseWhere,
+        include: {
           user: {
             select: {
               id: true,
@@ -119,17 +88,8 @@ export async function GET(req: NextRequest) {
             select: {
               likes: true
             }
-          },
-          bookmarks: {
-            where: {
-              userId
-            },
-            select: {
-              id: true
-            }
           }
         },
-        where: baseWhere,
         orderBy: {
           createdAt: order
         },
@@ -138,27 +98,66 @@ export async function GET(req: NextRequest) {
       })
     ])
 
-    // Add isBookmarked flag
-    const notesWithBookmark = notes.map(note => ({
+    // Get user's bookmarks and likes
+    const [noteBookmarks, flashcardBookmarks, noteLikes, flashcardLikes] = await Promise.all([
+      prisma.bookmark.findMany({
+        where: {
+          userId,
+          contentType: "note",
+          noteId: { in: notes.map(n => n.id) }
+        },
+        select: { noteId: true }
+      }),
+      prisma.bookmark.findMany({
+        where: {
+          userId,
+          contentType: "flashcard",
+          flashcardSetId: { in: flashcards.map(f => f.id) }
+        },
+        select: { flashcardSetId: true }
+      }),
+      prisma.like.findMany({
+        where: {
+          userId,
+          contentType: "note",
+          noteId: { in: notes.map(n => n.id) }
+        },
+        select: { noteId: true }
+      }),
+      prisma.like.findMany({
+        where: {
+          userId,
+          contentType: "flashcard",
+          flashcardSetId: { in: flashcards.map(f => f.id) }
+        },
+        select: { flashcardSetId: true }
+      })
+    ])
+
+    const bookmarkedNoteIds = new Set(noteBookmarks.map(b => b.noteId))
+    const bookmarkedFlashcardIds = new Set(flashcardBookmarks.map(b => b.flashcardSetId))
+    const likedNoteIds = new Set(noteLikes.map(l => l.noteId))
+    const likedFlashcardIds = new Set(flashcardLikes.map(l => l.flashcardSetId))
+
+    const notesWithFlags = notes.map(note => ({
       ...note,
-      isBookmarked: note.bookmarks.length > 0,
-      bookmarks: undefined
+      isBookmarked: bookmarkedNoteIds.has(note.id),
+      isLiked: likedNoteIds.has(note.id)
     }))
 
-    const flashcardsWithBookmark = flashcards.map(flashcard => ({
+    const flashcardsWithFlags = flashcards.map(flashcard => ({
       ...flashcard,
-      isBookmarked: flashcard.bookmarks.length > 0,
-      bookmarks: undefined
+      isBookmarked: bookmarkedFlashcardIds.has(flashcard.id),
+      isLiked: likedFlashcardIds.has(flashcard.id)
     }))
 
-    // Calculate pagination
     const totalNPages = Math.ceil(totalNotesCount / limit)
     const totalFPages = Math.ceil(totalFlashcardsCount / limit)
 
     return NextResponse.json(
       {
-        notes: notesWithBookmark,
-        flashcards: flashcardsWithBookmark,
+        notes: notesWithFlags,
+        flashcards: flashcardsWithFlags,
         pagination: {
           npagination: {
             totalItems: totalNotesCount,
