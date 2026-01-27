@@ -98,8 +98,8 @@ export async function GET(req: NextRequest) {
       })
     ])
 
-    // Get user's bookmarks and likes
-    const [noteBookmarks, flashcardBookmarks, noteLikes, flashcardLikes] = await Promise.all([
+    // Get user's bookmarks, likes, and reports
+    const [noteBookmarks, flashcardBookmarks, noteLikes, flashcardLikes, noteReports, flashcardReports] = await Promise.all([
       prisma.bookmark.findMany({
         where: {
           userId,
@@ -125,6 +125,22 @@ export async function GET(req: NextRequest) {
         select: { noteId: true }
       }),
       prisma.like.findMany({
+        where: {
+          userId,
+          contentType: "flashcard",
+          flashcardSetId: { in: flashcards.map(f => f.id) }
+        },
+        select: { flashcardSetId: true }
+      }),
+      prisma.report.findMany({
+        where: {
+          userId,
+          contentType: "note",
+          noteId: { in: notes.map(n => n.id) }
+        },
+        select: { noteId: true }
+      }),
+      prisma.report.findMany({
         where: {
           userId,
           contentType: "flashcard",
@@ -138,17 +154,21 @@ export async function GET(req: NextRequest) {
     const bookmarkedFlashcardIds = new Set(flashcardBookmarks.map(b => b.flashcardSetId))
     const likedNoteIds = new Set(noteLikes.map(l => l.noteId))
     const likedFlashcardIds = new Set(flashcardLikes.map(l => l.flashcardSetId))
+    const reportedNoteIds = new Set(noteReports.map(r => r.noteId))
+    const reportedFlashcardIds = new Set(flashcardReports.map(r => r.flashcardSetId))
 
     const notesWithFlags = notes.map(note => ({
       ...note,
       isBookmarked: bookmarkedNoteIds.has(note.id),
-      isLiked: likedNoteIds.has(note.id)
+      isLiked: likedNoteIds.has(note.id),
+      isReported: reportedNoteIds.has(note.id)
     }))
 
     const flashcardsWithFlags = flashcards.map(flashcard => ({
       ...flashcard,
       isBookmarked: bookmarkedFlashcardIds.has(flashcard.id),
-      isLiked: likedFlashcardIds.has(flashcard.id)
+      isLiked: likedFlashcardIds.has(flashcard.id),
+      isReported: reportedFlashcardIds.has(flashcard.id)
     }))
 
     const totalNPages = Math.ceil(totalNotesCount / limit)

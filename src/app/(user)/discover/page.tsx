@@ -5,13 +5,14 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { categories } from "@/data/user"
 import { FlashcardSet, Note } from "@/generated/prisma/client"
-import { ContentCategory } from "@/generated/prisma/enums"
+import { ContentCategory, ReportReason } from "@/generated/prisma/enums"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { LucideSearch } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationEllipsis, PaginationLink, PaginationNext } from "@/components/ui/pagination"
 import { NFCard } from "@/components/user/NFCard"
+import { ReportDialog } from "@/components/user/ReportDialog"
 import { toast } from "sonner"
 
 type CategoryFilter = ContentCategory | "all"
@@ -36,6 +37,7 @@ type NoteWithUser = Note & {
   }
   isBookmarked: boolean
   isLiked: boolean
+  isReported: boolean
 }
 
 type FlashcardSetWithUser = FlashcardSet & {
@@ -49,6 +51,14 @@ type FlashcardSetWithUser = FlashcardSet & {
   }
   isBookmarked: boolean
   isLiked: boolean
+  isReported: boolean
+}
+
+type ReportDialogState = {
+  open: boolean
+  contentId: number | null
+  contentType: "note" | "flashcard" | null
+  contentTitle: string
 }
 
 export default function DiscoverPage() {
@@ -60,6 +70,13 @@ export default function DiscoverPage() {
   const [fpagination, setFPagination] = useState<PaginationMeta | null>(null)
   const [npagination, setNPagination] = useState<PaginationMeta | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+
+  const [reportDialog, setReportDialog] = useState<ReportDialogState>({
+    open: false,
+    contentId: null,
+    contentType: null,
+    contentTitle: ""
+  })
 
   const [search, setSearch] = useState(() => {
     return searchParams.get("search") ?? ""
@@ -219,6 +236,84 @@ export default function DiscoverPage() {
     } catch (error) {
       console.error("Error toggling like:", error)
       toast.error("Error toggling like")
+    }
+  }
+
+  function handleOpenReportDialog(
+    contentId: number,
+    contentType: "note" | "flashcard",
+    contentTitle: string,
+    isReported: boolean,
+    e: React.MouseEvent
+  ) {
+    e.stopPropagation()
+
+    // Jika sudah di-report, langsung unreport tanpa dialog
+    if (isReported) {
+      handleSubmitReport(contentId, contentType, ReportReason.spam)
+      return
+    }
+
+    // Buka dialog untuk report baru
+    setReportDialog({
+      open: true,
+      contentId,
+      contentType,
+      contentTitle
+    })
+  }
+
+  async function handleSubmitReport(
+    contentId: number,
+    contentType: "note" | "flashcard",
+    reason: ReportReason,
+    description?: string
+  ) {
+    try {
+      const res = await fetch("/api/reports/toggle", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          contentId,
+          contentType,
+          reason,
+          description
+        })
+      })
+
+      if (!res.ok) {
+        throw new Error("Failed to toggle report")
+      }
+
+      const data = await res.json()
+
+      if (contentType === "note") {
+        setNotes(prev =>
+          prev.map(note =>
+            note.id === contentId
+              ? { ...note, isReported: data.isReported }
+              : note
+          )
+        )
+      } else {
+        setFlashcards(prev =>
+          prev.map(flashcard =>
+            flashcard.id === contentId
+              ? { ...flashcard, isReported: data.isReported }
+              : flashcard
+          )
+        )
+      }
+
+      const notif = data.isReported ? "Content reported" : "Report removed"
+      toast(notif, {
+        description: data.message
+      })
+    } catch (error) {
+      console.error("Error toggling report:", error)
+      toast.error("Error toggling report")
     }
   }
 
@@ -414,8 +509,8 @@ export default function DiscoverPage() {
                     onClick={() => router.push(`/notes/${n.id}`)}
                     onBookmark={(e) => handleToggleBookmark(n.id, "note", e)}
                     onLike={(e) => handleToggleLike(n.id, "note", e)}
-                    showBookmark
-                    showLike
+                    onReport={(e) => handleOpenReportDialog(n.id, "note", n.title, n.isReported, e)}
+                    showActions
                   />
                 ))}
               </div>
@@ -440,8 +535,8 @@ export default function DiscoverPage() {
                     onClick={() => router.push(`/flashcards/${f.id}`)}
                     onBookmark={(e) => handleToggleBookmark(f.id, "flashcard", e)}
                     onLike={(e) => handleToggleLike(f.id, "flashcard", e)}
-                    showBookmark
-                    showLike
+                    onReport={(e) => handleOpenReportDialog(f.id, "flashcard", f.title, f.isReported, e)}
+                    showActions
                   />
                 ))}
               </div>
@@ -456,89 +551,106 @@ export default function DiscoverPage() {
             <PaginationContent className="gap-1">
               <PaginationItem>
                 <PaginationPrevious
-                href={
-                activePagination.hasPreviousPage
-                  ? createPageUrl(activePagination.currentPage - 1)
-                  : "#"
-              }
-              aria-disabled={!activePagination.hasPreviousPage}
-              className={
-                !activePagination.hasPreviousPage
-                  ? "pointer-events-none opacity-50"
-                  : "cursor-pointer"
-              }
-            />
-          </PaginationItem>
+                  href={
+                    activePagination.hasPreviousPage
+                      ? createPageUrl(activePagination.currentPage - 1)
+                      : "#"
+                  }
+                  aria-disabled={!activePagination.hasPreviousPage}
+                  className={
+                    !activePagination.hasPreviousPage
+                      ? "pointer-events-none opacity-50"
+                      : "cursor-pointer"
+                  }
+                />
+              </PaginationItem>
 
-          {(() => {
-            const total = activePagination.totalPages
-            const current = activePagination.currentPage
-            const pages: (number | string)[] = []
+              {(() => {
+                const total = activePagination.totalPages
+                const current = activePagination.currentPage
+                const pages: (number | string)[] = []
 
-            pages.push(1)
+                pages.push(1)
 
-            if (current > 3) {
-              pages.push("ellipsis-start")
-            }
-
-            const neighbors = [
-              current - 1,
-              current,
-              current + 1,
-            ].filter((p) => p > 1 && p < total)
-
-            pages.push(...neighbors)
-
-            if (current < total - 2) {
-              pages.push("ellipsis-end")
-            }
-
-            if (total > 1) {
-              pages.push(total)
-            }
-
-            return pages.map((page, index) => {
-              if (page === "ellipsis-start" || page === "ellipsis-end") {
-                return (
-                  <PaginationItem key={`ellipsis-${index}`}>
-                    <PaginationEllipsis />
-                  </PaginationItem>
-                )
-              }
-
-              const pageNumber = page as number
-
-              return (
-                <PaginationItem key={pageNumber}>
-                  <PaginationLink
-                    href={createPageUrl(pageNumber)}
-                    isActive={activePagination.currentPage === pageNumber}
-                  >
-                    {pageNumber}
-                  </PaginationLink>
-                </PaginationItem>
-              )
-            })
-          })()}
-
-            <PaginationItem>
-              <PaginationNext
-                href={
-                  activePagination.hasNextPage
-                    ? createPageUrl(activePagination.currentPage + 1)
-                    : "#"
+                if (current > 3) {
+                  pages.push("ellipsis-start")
                 }
-                aria-disabled={!activePagination.hasNextPage}
-                className={
-                  !activePagination.hasNextPage
-                    ? "pointer-events-none opacity-50"
-                    : "cursor-pointer"
+
+                const neighbors = [
+                  current - 1,
+                  current,
+                  current + 1,
+                ].filter((p) => p > 1 && p < total)
+
+                pages.push(...neighbors)
+
+                if (current < total - 2) {
+                  pages.push("ellipsis-end")
                 }
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      </section>
-    )}
-  </>
-)}
+
+                if (total > 1) {
+                  pages.push(total)
+                }
+
+                return pages.map((page, index) => {
+                  if (page === "ellipsis-start" || page === "ellipsis-end") {
+                    return (
+                      <PaginationItem key={`ellipsis-${index}`}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    )
+                  }
+
+                  const pageNumber = page as number
+
+                  return (
+                    <PaginationItem key={pageNumber}>
+                      <PaginationLink
+                        href={createPageUrl(pageNumber)}
+                        isActive={activePagination.currentPage === pageNumber}
+                      >
+                        {pageNumber}
+                      </PaginationLink>
+                    </PaginationItem>
+                  )
+                })
+              })()}
+
+              <PaginationItem>
+                <PaginationNext
+                  href={
+                    activePagination.hasNextPage
+                      ? createPageUrl(activePagination.currentPage + 1)
+                      : "#"
+                  }
+                  aria-disabled={!activePagination.hasNextPage}
+                  className={
+                    !activePagination.hasNextPage
+                      ? "pointer-events-none opacity-50"
+                      : "cursor-pointer"
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </section>
+      )}
+
+      {/* Report Dialog */}
+      <ReportDialog
+        open={reportDialog.open}
+        onOpenChange={(open: boolean) => setReportDialog(prev => ({ ...prev, open }))}
+        onSubmit={async (reason: ReportReason, description?: string) => {
+          await handleSubmitReport(
+            reportDialog.contentId!,
+            reportDialog.contentType!,
+            reason,
+            description
+          )
+        }}
+        contentTitle={reportDialog.contentTitle}
+        contentType={reportDialog.contentType || "note"}
+      />
+    </>
+  )
+}
