@@ -314,7 +314,7 @@ export default function AdminReportsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[80px]">ID</TableHead>
+                  <TableHead className="w-20">ID</TableHead>
                   <TableHead>Reporter</TableHead>
                   <TableHead>Content</TableHead>
                   <TableHead>Type</TableHead>

@@ -1,119 +1,124 @@
-import { auth } from "@/auth";
-import { ReportReason, ReportStatus } from "@/generated/prisma/enums";
-import { prisma } from "@/lib/prisma";
-import { NextRequest, NextResponse } from "next/server";
+// app/api/admin/reports/route.ts
+import { auth } from "@/auth"
+import { prisma } from "@/lib/prisma"
+import { ReportStatus, ReportReason } from "@/generated/prisma/enums"
+import { NextRequest, NextResponse } from "next/server"
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
+    const session = await auth()
     if (!session?.user) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
-      );
+      )
     }
 
-    // Verifikasi apakah user adalah admin
+    // Check if user is admin
     const user = await prisma.user.findUnique({
       where: { id: Number(session.user.id) },
       select: { role: true }
-    });
+    })
 
     if (user?.role !== "admin") {
       return NextResponse.json(
         { error: "Forbidden - Admin access required" },
         { status: 403 }
-      );
+      )
     }
 
-    const searchParams = req.nextUrl.searchParams;
+    const searchParams = req.nextUrl.searchParams
+    
+    const rawStatus = searchParams.get("status")
+    const rawReason = searchParams.get("reason")
+    const rawOrder = searchParams.get("order")
+    const rawPage = searchParams.get("page")
+    const limit = 20
 
-    const rawOrder = searchParams.get("order");
-    const rawStatus = searchParams.get("status");
-    const rawReason = searchParams.get("reason");
-    const rawPage = searchParams.get("page");
-    const limit = 12;
-
-    // Validasi order (newest/oldest)
-    const order: "asc" | "desc" = rawOrder === "asc" || rawOrder === "desc"
-      ? rawOrder
-      : "desc";
-
-    // Validasi status
-    const status = Object.values(ReportStatus).includes(rawStatus as ReportStatus)
+    const status = rawStatus && Object.values(ReportStatus).includes(rawStatus as ReportStatus)
       ? (rawStatus as ReportStatus)
-      : undefined;
+      : undefined
 
-    // Validasi reason
-    const reason = Object.values(ReportReason).includes(rawReason as ReportReason)
+    const reason = rawReason && Object.values(ReportReason).includes(rawReason as ReportReason)
       ? (rawReason as ReportReason)
-      : undefined;
+      : undefined
 
-    // Validasi page
-    const page = rawPage && Number(rawPage) > 0
+    const order: "asc" | "desc" = rawOrder === "asc" 
+      ? "asc" 
+      : "desc"
+
+    const page = rawPage && !isNaN(Number(rawPage)) && Number(rawPage) > 0
       ? Number(rawPage)
-      : 1;
+      : 1
 
-    const skip = (page - 1) * limit;
+    const skip = (page - 1) * limit
 
-    // Hitung total reports dengan filter
-    const totalReportsCount = await prisma.report.count({
-      where: {
-        ...(status && { status }),
-        ...(reason && { reason })
-      }
-    });
+    const where = {
+      ...(status && { status }),
+      ...(reason && { reason })
+    }
 
-    // Ambil reports dengan filter, pagination, dan relasi
-    const reports = await prisma.report.findMany({
-      where: {
-        ...(status && { status }),
-        ...(reason && { reason })
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            score: true,
-            role: true,
-            status: true,
+    const [totalItems, reports] = await Promise.all([
+      prisma.report.count({ where }),
+      prisma.report.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+              role: true,
+              status: true,
+              score: true
+            }
+          },
+          note: {
+            select: {
+              id: true,
+              title: true,
+              category: true,
+              visibility: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              }
+            }
+          },
+          flashcardSet: {
+            select: {
+              id: true,
+              title: true,
+              category: true,
+              visibility: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              }
+            }
           }
         },
-        note: {
-          select: {
-            id: true,
-            title: true,
-            category: true,
-            visibility: true,
-          }
+        orderBy: {
+          createdAt: order
         },
-        flashcardSet: {
-          select: {
-            id: true,
-            title: true,
-            category: true,
-            visibility: true,
-          }
-        }
-      },
-      orderBy: {
-        createdAt: order,
-      },
-      skip: skip,
-      take: limit
-    });
+        skip,
+        take: limit
+      })
+    ])
 
-    const totalPages = Math.ceil(totalReportsCount / limit);
+    const totalPages = Math.ceil(totalItems / limit)
 
     return NextResponse.json(
       {
-        message: "Reports fetched successfully",
-        reports: reports,
+        reports,
         pagination: {
-          totalItems: totalReportsCount,
-          totalPages: totalPages,
+          totalItems,
+          totalPages,
           currentPage: page,
           pageSize: limit,
           hasNextPage: page < totalPages,
@@ -121,12 +126,12 @@ export async function GET(req: NextRequest) {
         }
       },
       { status: 200 }
-    );
+    )
   } catch (err) {
-    console.error("Reports API error:", err);
+    console.error("Reports API error:", err)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
-    );
+    )
   }
 }
