@@ -5,7 +5,7 @@ import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller, useForm } from "react-hook-form"
 import { Field, FieldError, FieldGroup, FieldLabel } from "../ui/field"
-import { registerSchema } from "@/lib/zod"
+import { registerSchema } from "@/lib/validations/auth"
 import { Input } from "../ui/input"
 import { Button } from "../ui/button"
 import { toast } from "sonner"
@@ -15,7 +15,9 @@ import { LucideEye, LucideEyeOff } from "lucide-react"
 
 export function RegisterForm() {
   const [showPass, setShowPass] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
     mode: "onChange",
@@ -27,6 +29,8 @@ export function RegisterForm() {
   })
 
   async function onSubmit(data: z.infer<typeof registerSchema>) {
+    setIsLoading(true)
+    
     try {
       const res = await fetch("/api/register", {
         method: "POST",
@@ -37,20 +41,40 @@ export function RegisterForm() {
       const result = await res.json()
 
       if (!res.ok) {
-        throw new Error(result.error || "Register failed")
+        if (res.status === 409) {
+          toast.error("Email already registered", {
+            description: "Try using a different email or sign in instead"
+          })
+        } else if (res.status === 400) {
+          toast.error("Invalid input", {
+            description: "Please check your information and try again"
+          })
+        } else {
+          toast.error("Sign up failed", {
+            description: "Please try again later"
+          })
+        }
+        setIsLoading(false)
+        return
       }
 
-      toast.success("Account created")
+      toast.success("Account created successfully!", {
+        description: "Redirecting to login..."
+      })
       form.reset()
 
-      router.push("/login")
+      setTimeout(() => {
+        router.push("/login")
+      }, 1000)
     } catch (err) {
-      toast.error("Sign up failed", {
-        description: `${err}`
-      }
-      )
+      console.error("Register error:", err)
+      toast.error("An error occurred", {
+        description: "Please try again later"
+      })
+      setIsLoading(false)
     }
   }
+
   return(
     <>
       <form
@@ -70,9 +94,11 @@ export function RegisterForm() {
                   <Input
                     {...field}
                     id="name"
+                    type="text"
                     aria-invalid={fieldState.invalid}
-                    placeholder="john doe"
-                    autoComplete="off"
+                    placeholder="John Doe"
+                    autoComplete="name"
+                    disabled={isLoading}
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} className="ml-1" />
@@ -94,9 +120,11 @@ export function RegisterForm() {
                   <Input
                     {...field}
                     id="email"
+                    type="email"
                     aria-invalid={fieldState.invalid}
                     placeholder="example@gmail.com"
-                    autoCapitalize="off"
+                    autoComplete="email"
+                    disabled={isLoading}
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} className="ml-1" />
@@ -121,16 +149,18 @@ export function RegisterForm() {
                       id="password"
                       type={showPass ? "text" : "password"}
                       aria-invalid={fieldState.invalid}
-                      placeholder="securepass"
-                      autoComplete="off"
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                      disabled={isLoading}
                     />
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => setShowPass(!showPass)}
                       className="shrink-0 text-secondary-foreground"
+                      disabled={isLoading}
                     >
-                      {showPass ? <LucideEye /> : <LucideEyeOff />}
+                      {showPass ? <LucideEye size={20} /> : <LucideEyeOff size={20} />}
                     </Button>
                   </div>
                   {fieldState.invalid && (
@@ -151,7 +181,12 @@ export function RegisterForm() {
               Sign in
             </Link>
           </small>
-          <Button type="submit">Sign up</Button>
+          <Button 
+            type="submit"
+            disabled={isLoading}
+          >
+            {isLoading ? "Creating account..." : "Sign up"}
+          </Button>
         </div>
       </form>
     </>

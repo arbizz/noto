@@ -19,7 +19,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 import { cn } from "@/lib/utils"
-import { categories } from "@/data/user"
+import { categories } from "@/constants/user"
 import { ContentCategory, Visibility } from "@/generated/prisma/enums"
 
 interface Flashcard {

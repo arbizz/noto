@@ -1,5 +1,5 @@
 // app/api/admin/reports/[id]/actions/route.ts
-import { auth } from "@/auth"
+import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { ReportStatus } from "@/generated/prisma/enums"
 import { NextRequest, NextResponse } from "next/server"

@@ -2,7 +2,7 @@
 
 import * as z from "zod"
 import Link from "next/link"
-import { loginSchema } from "@/lib/zod"
+import { loginSchema } from "@/lib/validations/auth"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { signIn } from "next-auth/react"
@@ -17,6 +17,7 @@ import { FcGoogle } from "react-icons/fc"
 
 export function LoginForm() {
   const [showPass, setShowPass] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
   const form = useForm<z.infer<typeof loginSchema>>({
@@ -29,20 +30,30 @@ export function LoginForm() {
   })
 
   async function onSubmit(data: z.infer<typeof loginSchema>) {
-    const res = await signIn("credentials", {
-      ...data,
-      redirect: false
-    })
-  
-    if (res?.error) {
-      toast.error("Invalid credentials", {
-        description: "Check your email and password"
+    setIsLoading(true)
+    
+    try {
+      const res = await signIn("credentials", {
+        ...data,
+        redirect: false
       })
-      return
-    }
+    
+      if (res?.error) {
+        toast.error("Invalid credentials", {
+          description: "Check your email and password"
+        })
+        setIsLoading(false)
+        return
+      }
 
-    toast.success("Sign in success")
-    router.push("/dashboard")
+      toast.success("Sign in success")
+      router.push("/dashboard")
+    } catch (error) {
+      toast.error("An error occurred", {
+        description: "Please try again"
+      })
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -62,9 +73,11 @@ export function LoginForm() {
                   <Input
                     {...field}
                     id="email"
+                    type="email"
                     aria-invalid={fieldState.invalid}
-                    placeholder="notyourdad@example.com"
-                    autoComplete="off"
+                    placeholder="example@gmail.com"
+                    autoComplete="email"
+                    disabled={isLoading}
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} className="ml-1" />
@@ -86,16 +99,18 @@ export function LoginForm() {
                       id="password"
                       type={showPass ? "text" : "password"}
                       aria-invalid={fieldState.invalid}
-                      placeholder="securepass"
-                      autoComplete="off"
+                      placeholder="••••••••"
+                      autoComplete="current-password"
+                      disabled={isLoading}
                     />
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => setShowPass(!showPass)}
                       className="shrink-0 text-secondary-foreground"
+                      disabled={isLoading}
                     >
-                      {showPass ? <LucideEye /> : <LucideEyeOff />}
+                      {showPass ? <LucideEye size={20} /> : <LucideEyeOff size={20} />}
                     </Button>
                   </div>
                   {fieldState.invalid && (
@@ -108,11 +123,16 @@ export function LoginForm() {
         </FieldGroup>
         <div className="flex flex-col gap-4 text-center">
           <small className="text-muted-foreground">
-            Don&apos;t have an account? {""}
-              <Link href="/register" className="font-semibold text-foreground hover:underline">Create one</Link>
+            Don&apos;t have an account?{" "}
+            <Link href="/register" className="font-semibold text-foreground hover:underline">
+              Create one
+            </Link>
           </small>
-          <Button type="submit">
-            Sign in
+          <Button 
+            type="submit" 
+            disabled={isLoading}
+          >
+            {isLoading ? "Signing in..." : "Sign in"}
           </Button>
           <div className="flex items-center gap-3">
             <span className="flex-1 h-px bg-border" />
@@ -124,6 +144,7 @@ export function LoginForm() {
             variant="outline"
             onClick={() => signIn("google")}
             className="flex items-center gap-2"
+            disabled={isLoading}
           >
             <FcGoogle />
             Sign in with Google

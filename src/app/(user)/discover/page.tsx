@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { categories } from "@/data/user"
+import { categories } from "@/constants/user"
 import { FlashcardSet, Note } from "@/generated/prisma/client"
 import { ContentCategory, ReportReason } from "@/generated/prisma/enums"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"

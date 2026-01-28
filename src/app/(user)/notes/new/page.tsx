@@ -21,7 +21,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { TiptapEditor } from "@/components/user/TiptapEditor"
 
-import { categories } from "@/data/user"
+import { categories } from "@/constants/user"
 import {
   ContentCategory,
   Visibility,

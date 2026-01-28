@@ -28,7 +28,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 
-import { categories } from "@/data/user"
+import { categories } from "@/constants/user"
 import { ContentCategory, Note, Visibility } from "@/generated/prisma/client"
 import Link from "next/link"
 import { NFCard } from "@/components/user/NFCard"

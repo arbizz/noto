@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -18,12 +15,13 @@ model User {
   name          String      @db.VarChar(50)
   email         String      @unique @db.VarChar(100)
   emailVerified DateTime?
-  password      String?     @db.VarChar(255)
+  password      String?     @db.VarChar(255) // Optional for OAuth users
   image         String?
   role          UserRole    @default(user)
   status        UserStatus  @default(active)
   score         Int         @default(100)
   createdAt     DateTime    @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP")) @map("created_at")
+  updatedAt     DateTime    @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")) @map("updated_at")
 
   accounts       Account[]
   bookmarks      Bookmark[]
@@ -57,7 +55,6 @@ model Account {
   @@map("accounts")
 }
 
-
 model Bookmark {
   id               Int          @id @default(autoincrement())
   userId           Int          @map("user_id")
@@ -71,6 +68,7 @@ model Bookmark {
   note          Note?         @relation(fields: [noteId], references: [id], onDelete: Cascade)
   flashcardSet  FlashcardSet? @relation(fields: [flashcardSetId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, noteId, flashcardSetId])
   @@map("bookmarks")
 }
 
@@ -144,10 +142,11 @@ model Report {
   noteId           Int?         @map("note_id")
   flashcardSetId   Int?         @map("flashcard_set_id")
   contentType      ContentType  @map("content_type")
-  reason           ReportReason 
+  reason           ReportReason
   description      String?      @db.VarChar(100)
   status           ReportStatus @default(pending)
   createdAt        DateTime     @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP")) @map("created_at")
+  updatedAt        DateTime     @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")) @map("updated_at")
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   note         Note?         @relation(fields: [noteId], references: [id], onDelete: Cascade)
@@ -157,16 +156,17 @@ model Report {
 }
 
 model Testimonial {
-  id         Int      @id @default(autoincrement())
-  userId     Int      @map("user_id")
-  content    String   @db.Text
-  createdAt  DateTime @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP")) @map("created_at")
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  content   String   @db.Text
+  createdAt DateTime @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP")) @map("created_at")
 
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("testimonials")
 }
 
+// Enums
 enum Visibility {
   public
   private

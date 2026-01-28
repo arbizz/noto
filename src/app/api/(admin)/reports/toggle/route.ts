@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { auth } from "@/lib/auth";
 import { ReportReason } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
