@@ -13,6 +13,7 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { LucideChevronLeft, LucideChevronRight, LucideRotateCcw, LucideTrash, Trash2 } from "lucide-react";
+import { InputMetadata, MetadataConfig } from "@/components/shared/InputMetadata";
 
 interface Flashcard {
   front: string
@@ -27,7 +28,7 @@ export default function NewFlashcardPage() {
   ])
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
-  const [category, setCategory] = useState<ContentCategory>()
+  const [category, setCategory] = useState<ContentCategory>("other")
   const [visibility, setVisibility] = useState<Visibility>("private")
 
   // const [currentIndex, setCurrentIndex] = useState(0);
@@ -106,78 +107,33 @@ export default function NewFlashcardPage() {
     if (id) toast.success("Created")
   }
 
+  const metadatas: MetadataConfig[] = [
+    {
+      type: "title",
+      value: title,
+      onChange: setTitle
+    },
+    {
+      type: "description",
+      value: description,
+      onChange: setDescription
+    },
+    {
+      type: "category",
+      value: category,
+      onChange: setCategory
+    },
+    {
+      type: "visibility",
+      value: visibility,
+      onChange: setVisibility
+    }
+  ]
+
   return (
     <>
       <section className="space-y-4">
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="title" className="ml-1">Title</Label>
-          <Input
-            id="title"
-            type="text"
-            placeholder="Untitled"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="desc" className="ml-1">Description</Label>
-          <Textarea
-            id="desc"
-            placeholder="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <Select
-            value={category}
-            onValueChange={(value) => {
-              const v = value as ContentCategory
-              setCategory(v)
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-          
-            <SelectContent>
-              {categories.map((c, i) => {
-                const value = c.replaceAll(" ", "_").toLowerCase()
-              
-                return (
-                  <SelectItem key={i} value={value}>
-                    {c}
-                  </SelectItem>
-                )
-              })}
-            </SelectContent>
-          </Select>
-            
-          <div className="flex gap-2 w-full">
-            <Label htmlFor="vis">Visibility</Label>
-            <RadioGroup
-              id="vis"
-              value={visibility}
-              onValueChange={(value) => {
-                const v = value as Visibility
-                setVisibility(v)
-              }}
-              className="flex flex-1 justify-between"
-            >
-              <Label className="flex flex-1 items-center gap-2 border p-2 rounded-md shadow-xs">
-                <RadioGroupItem value="private" />
-                Private
-              </Label>
-            
-              <Label className="flex flex-1 items-center gap-2 border p-2 rounded-md shadow-xs">
-                <RadioGroupItem value="public" />
-                Public
-              </Label>
-            </RadioGroup>
-          </div>
-        </div>
+        <InputMetadata metadatas={metadatas} />
       </section>
 
       <section className="mt-12 space-y-4">

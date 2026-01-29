@@ -6,20 +6,10 @@ import { toast } from "sonner"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { InputMetadata, MetadataConfig } from "@/components/shared/InputMetadata"
 
 import { cn } from "@/lib/utils"
-import { categories } from "@/constants/user"
 import { ContentCategory, Visibility } from "@/generated/prisma/enums"
 
 interface Flashcard {
@@ -30,95 +20,93 @@ interface Flashcard {
 interface InitialState {
   title: string
   description: string
-  category?: ContentCategory
+  category: ContentCategory
   visibility: Visibility
   flashcards: Flashcard[]
 }
 
 export default function FlashcardPage() {
   const router = useRouter()
-  const { flashcardId } = useParams<{ flashcardId: string }>()
+  const { flashcardId } = useParams()
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
 
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
-  const [category, setCategory] = useState<ContentCategory | undefined>()
+  const [category, setCategory] = useState<ContentCategory>("other")
   const [visibility, setVisibility] = useState<Visibility>("private")
   const [flashcards, setFlashcards] = useState<Flashcard[]>([])
 
   const [initialState, setInitialState] = useState<InitialState | null>(null)
-
   const [dirty, setDirty] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
+  const [renderKey, setRenderKey] = useState(0)
 
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
 
   useEffect(() => {
     async function fetchData() {
-      const res = await fetch(`/api/flashcards/${flashcardId}`)
+      setIsLoading(true)
 
-      if (!res.ok) {
-        toast.error("Failed to load flashcards")
-        return
+      try {
+        const res = await fetch(`/api/flashcards/${flashcardId}`)
+
+        if (!res.ok) {
+          toast.error("Failed to load flashcard set")
+          return
+        }
+
+        const { data } = await res.json()
+
+        setTitle(data.title)
+        setDescription(data.description ?? "")
+        setCategory(data.category)
+        setVisibility(data.visibility)
+        setFlashcards(data.flashcards)
+
+        setInitialState({
+          title: data.title,
+          description: data.description ?? "",
+          category: data.category,
+          visibility: data.visibility,
+          flashcards: structuredClone(data.flashcards),
+        })
+      } catch (error) {
+        console.error("Error fetching flashcard data:", error)
+        toast.error("Failed to load flashcard set")
+      } finally {
+        setIsLoading(false)
       }
-
-      const { data } = await res.json()
-      const clonedFlashcards = structuredClone(data.flashcards)
-
-      setTitle(data.title)
-      setDescription(data.description)
-      setCategory(data.category)
-      setVisibility(data.visibility)
-      setFlashcards(clonedFlashcards)
-
-      setInitialState({
-        title: data.title,
-        description: data.description,
-        category: data.category,
-        visibility: data.visibility,
-        flashcards: structuredClone(data.flashcards),
-      })
     }
 
     fetchData()
   }, [flashcardId])
 
   useEffect(() => {
-    if (!initialState) return
+    if (!initialState) {
+      setDirty(false)
+      return
+    }
 
     const isDirty =
       title !== initialState.title ||
       description !== initialState.description ||
       category !== initialState.category ||
       visibility !== initialState.visibility ||
-      JSON.stringify(flashcards) !==
-        JSON.stringify(initialState.flashcards)
+      JSON.stringify(flashcards) !== JSON.stringify(initialState.flashcards)
 
     setDirty(isDirty)
-  }, [
-    title,
-    description,
-    category,
-    visibility,
-    flashcards,
-    initialState,
-  ])
+  }, [title, description, category, visibility, flashcards, initialState])
 
   useEffect(() => {
-    if (currentIndex >= flashcards.length) {
-      setCurrentIndex(Math.max(0, flashcards.length - 1))
+    if (currentIndex >= flashcards.length && flashcards.length > 0) {
+      setCurrentIndex(flashcards.length - 1)
     }
   }, [flashcards.length, currentIndex])
 
-  function updateCard(
-    index: number,
-    field: "front" | "back",
-    value: string
-  ) {
+  function updateCard(index: number, field: "front" | "back", value: string) {
     setFlashcards((prev) =>
-      prev.map((card, i) =>
-        i === index ? { ...card, [field]: value } : card
-      )
+      prev.map((card, i) => (i === index ? { ...card, [field]: value } : card))
     )
   }
 
@@ -132,10 +120,24 @@ export default function FlashcardPage() {
     setCurrentIndex((i) => Math.max(i - 1, 0))
   }
 
-  async function handleSave() {
-    try {
-      setIsSaving(true)
+  function handleCancel() {
+    if (!initialState) return
 
+    setTitle(initialState.title)
+    setDescription(initialState.description)
+    setCategory(initialState.category)
+    setVisibility(initialState.visibility)
+    setFlashcards(structuredClone(initialState.flashcards))
+    setRenderKey((k) => k + 1)
+    setIsFlipped(false)
+  }
+
+  async function handleSave() {
+    if (!dirty) return
+
+    setIsSaving(true)
+
+    try {
       const res = await fetch(`/api/flashcards/${flashcardId}`, {
         method: "PATCH",
         headers: {
@@ -151,8 +153,8 @@ export default function FlashcardPage() {
       })
 
       if (!res.ok) {
-        const err = await res.json()
-        toast.error(err.error ?? "Failed to save")
+        const error = await res.json()
+        toast.error(error.error ?? "Failed to save changes")
         return
       }
 
@@ -160,16 +162,17 @@ export default function FlashcardPage() {
 
       setInitialState({
         title: data.title,
-        description: data.description,
+        description: data.description ?? "",
         category: data.category,
         visibility: data.visibility,
         flashcards: structuredClone(data.flashcards),
       })
 
-      toast.success("Changes saved")
-    } catch (err) {
-      console.error(err)
-      toast.error("Something went wrong")
+      setDirty(false)
+      toast.success("Changes saved successfully")
+    } catch (error) {
+      console.error("Error saving flashcard:", error)
+      toast.error("Failed to save changes")
     } finally {
       setIsSaving(false)
     }
@@ -178,88 +181,68 @@ export default function FlashcardPage() {
   async function handleDelete() {
     if (!flashcardId) return
 
-    const res = await fetch(
-      `/api/flashcards/${flashcardId}`, {
-        method: "DELETE"
-      }
-    )
+    try {
+      const res = await fetch(`/api/flashcards/${flashcardId}`, {
+        method: "DELETE",
+      })
 
-    if (res.ok) {
-      toast.success("nasdflk")
+      if (!res.ok) {
+        toast.error("Failed to delete flashcard set")
+        return
+      }
+
+      toast.success("Flashcard set deleted successfully")
       router.push("/flashcards")
-    } else {
-      toast.error("failed")
+    } catch (error) {
+      console.error("Error deleting flashcard:", error)
+      toast.error("Failed to delete flashcard set")
     }
   }
 
+  const metadatas: MetadataConfig[] = [
+    {
+      type: "title",
+      value: title,
+      onChange: setTitle,
+    },
+    {
+      type: "description",
+      value: description,
+      onChange: setDescription,
+    },
+    {
+      type: "category",
+      value: category,
+      onChange: setCategory,
+    },
+    {
+      type: "visibility",
+      value: visibility,
+      onChange: setVisibility,
+    },
+  ]
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <p className="text-muted-foreground">Loading flashcard set...</p>
+      </div>
+    )
+  }
+
   const currentCard = flashcards[currentIndex]
-  if (!currentCard) return null
+  if (!currentCard) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <p className="text-muted-foreground">No flashcards available</p>
+      </div>
+    )
+  }
 
   return (
     <>
       <section className="space-y-4">
-        <div>
-          <Label>Title</Label>
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <Label>Description</Label>
-          <Textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </div>
-
-        <Select
-          value={category}
-          onValueChange={(v) =>
-            setCategory(v as ContentCategory)
-          }
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map((c) => (
-              <SelectItem
-                key={c}
-                value={c.replaceAll(" ", "_").toLowerCase()}
-              >
-                {c}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <div>
-          <Label>Visibility</Label>
-          <RadioGroup
-            value={visibility}
-            onValueChange={(v) =>
-              setVisibility(v as Visibility)
-            }
-          >
-            <Label className="flex gap-2 items-center">
-              <RadioGroupItem value="private" />
-              Private
-            </Label>
-            <Label className="flex gap-2 items-center">
-              <RadioGroupItem value="public" />
-              Public
-            </Label>
-          </RadioGroup>
-        </div>
-
-        <Button
-          onClick={handleSave}
-          disabled={!dirty || isSaving}
-        >
-          {isSaving ? "Saving..." : "Save Changes"}
-        </Button>
+        <InputMetadata metadatas={metadatas} />
       </section>
 
       <section className="mt-10 flex flex-col items-center gap-6">
@@ -281,6 +264,7 @@ export default function FlashcardPage() {
                 onChange={(e) =>
                   updateCard(currentIndex, "front", e.target.value)
                 }
+                placeholder="Front of card"
               />
             </CardContent>
 
@@ -291,6 +275,7 @@ export default function FlashcardPage() {
                 onChange={(e) =>
                   updateCard(currentIndex, "back", e.target.value)
                 }
+                placeholder="Back of card"
               />
             </CardContent>
           </Card>
@@ -317,12 +302,19 @@ export default function FlashcardPage() {
           {currentIndex + 1} / {flashcards.length}
         </p>
 
-        <p className="text-sm">
-          Dirty: <b>{dirty ? "TRUE" : "FALSE"}</b>
-        </p>
-        <Button variant="destructive" onClick={handleDelete}>
-          Delete
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button onClick={handleSave} disabled={!dirty || isSaving}>
+            {isSaving ? "Saving..." : "Save Changes"}
+          </Button>
+
+          <Button variant="outline" onClick={handleCancel} disabled={!dirty}>
+            Cancel
+          </Button>
+
+          <Button variant="destructive" onClick={handleDelete}>
+            Delete
+          </Button>
+        </div>
       </section>
     </>
   )

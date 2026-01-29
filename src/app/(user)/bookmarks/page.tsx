@@ -360,7 +360,7 @@ export default function BookmarksPage() {
                     content={n} 
                     onClick={() => router.push(`/notes/${n.id}`)}
                     onLike={(e) => handleToggleLike(n.id, "note", e)}
-                    showLike
+                    // showLike
                   />
                 ))}
               </div>
@@ -384,7 +384,7 @@ export default function BookmarksPage() {
                     content={f} 
                     onClick={() => router.push(`/flashcards/${f.id}`)}
                     onLike={(e) => handleToggleLike(f.id, "flashcard", e)}
-                    showLike
+                    // showLike
                   />
                 ))}
               </div>

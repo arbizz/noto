@@ -28,7 +28,6 @@ model User {
   notes          Note[]
   flashcardSets  FlashcardSet[]
   reports        Report[]
-  testimonials   Testimonial[]
   likes          Like[]
 
   @@map("users")
@@ -153,17 +152,6 @@ model Report {
   flashcardSet FlashcardSet? @relation(fields: [flashcardSetId], references: [id], onDelete: Cascade)
 
   @@map("reports")
-}
-
-model Testimonial {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @map("user_id")
-  content   String   @db.Text
-  createdAt DateTime @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP")) @map("created_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("testimonials")
 }
 
 // Enums

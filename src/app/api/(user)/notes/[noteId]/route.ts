@@ -32,7 +32,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ noteId:
     )
 
     return NextResponse.json(
-      { note: note },
+      { data: note },
       { status: 200 }
     )
   } catch (err) {
