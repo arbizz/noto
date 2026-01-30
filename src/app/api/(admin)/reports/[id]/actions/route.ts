@@ -1,10 +1,16 @@
-// app/api/admin/reports/[id]/actions/route.ts
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { ReportStatus } from "@/generated/prisma/enums"
+import { ReportStatus, UserStatus } from "@/generated/prisma/enums"
 import { NextRequest, NextResponse } from "next/server"
 
-type ActionType = "update_status" | "delete_content" | "validate_content"
+type ActionType = "set_reviewed" | "delete_content" | "reduce_score"
+type PenaltyLevel = 1 | 2 | 3
+
+const PENALTY_AMOUNTS = {
+  1: 10,  // Minor violation
+  2: 15,  // Moderate violation
+  3: 25   // Severe violation
+} as const
 
 export async function POST(
   req: NextRequest,
@@ -20,145 +26,196 @@ export async function POST(
     }
 
     // Check if user is admin
-    const user = await prisma.user.findUnique({
+    const admin = await prisma.user.findUnique({
       where: { id: Number(session.user.id) },
       select: { role: true }
     })
 
-    if (user?.role !== "admin") {
+    if (admin?.role !== "admin") {
       return NextResponse.json(
         { error: "Forbidden - Admin access required" },
         { status: 403 }
       )
     }
 
-    const reportId = Number(params.id)
-    if (isNaN(reportId)) {
+    // Parse ID format: "note-123" or "flashcard-456"
+    const [contentType, contentIdStr] = params.id.split("-")
+    const contentId = Number(contentIdStr)
+
+    if (!["note", "flashcard"].includes(contentType) || isNaN(contentId)) {
       return NextResponse.json(
-        { error: "Invalid report ID" },
+        { error: "Invalid content identifier" },
         { status: 400 }
       )
     }
 
     const body = await req.json()
-    const { action, status } = body as {
+    const { action, penaltyLevel } = body as {
       action: ActionType
-      status?: ReportStatus
+      penaltyLevel?: PenaltyLevel
     }
 
-    // Get the report first
-    const report = await prisma.report.findUnique({
-      where: { id: reportId },
-      include: {
-        note: true,
-        flashcardSet: true
-      }
+    // Get all reports for this content
+    const reports = await prisma.report.findMany({
+      where: contentType === "note"
+        ? { noteId: contentId, contentType: "note" }
+        : { flashcardSetId: contentId, contentType: "flashcard" }
     })
 
-    if (!report) {
+    if (reports.length === 0) {
       return NextResponse.json(
-        { error: "Report not found" },
+        { error: "No reports found for this content" },
         { status: 404 }
       )
     }
 
-    let result
+    // Get content to find owner
+    let contentOwnerId: number | null = null
+    if (contentType === "note") {
+      const note = await prisma.note.findUnique({
+        where: { id: contentId },
+        select: { userId: true }
+      })
+      contentOwnerId = note?.userId ?? null
+    } else {
+      const flashcardSet = await prisma.flashcardSet.findUnique({
+        where: { id: contentId },
+        select: { userId: true }
+      })
+      contentOwnerId = flashcardSet?.userId ?? null
+    }
+
+    if (!contentOwnerId) {
+      return NextResponse.json(
+        { error: "Content or content owner not found" },
+        { status: 404 }
+      )
+    }
 
     switch (action) {
-      case "update_status":
-        if (!status || !Object.values(ReportStatus).includes(status)) {
-          return NextResponse.json(
-            { error: "Valid status is required" },
-            { status: 400 }
-          )
-        }
-
-        result = await prisma.report.update({
-          where: { id: reportId },
-          data: {
-            status
-          }
-        })
-
-        return NextResponse.json(
-          { 
-            message: "Report status updated successfully",
-            report: result
-          },
-          { status: 200 }
-        )
-
-      case "validate_content":
-        // Mark report as reviewed and content as validated
-        result = await prisma.report.update({
-          where: { id: reportId },
+      case "set_reviewed":
+        // Update all reports for this content to "reviewed"
+        await prisma.report.updateMany({
+          where: contentType === "note"
+            ? { noteId: contentId, contentType: "note" }
+            : { flashcardSetId: contentId, contentType: "flashcard" },
           data: {
             status: "reviewed"
           }
         })
 
         return NextResponse.json(
+          { 
+            message: "All reports marked as reviewed",
+            totalUpdated: reports.length
+          },
+          { status: 200 }
+        )
+
+      case "reduce_score":
+        // Validate penalty level
+        if (!penaltyLevel || ![1, 2, 3].includes(penaltyLevel)) {
+          return NextResponse.json(
+            { error: "Valid penalty level (1, 2, or 3) is required" },
+            { status: 400 }
+          )
+        }
+
+        const penaltyAmount = PENALTY_AMOUNTS[penaltyLevel]
+
+        // Get current user data
+        const contentOwner = await prisma.user.findUnique({
+          where: { id: contentOwnerId },
+          select: { score: true, status: true }
+        })
+
+        if (!contentOwner) {
+          return NextResponse.json(
+            { error: "Content owner not found" },
+            { status: 404 }
+          )
+        }
+
+        const newScore = Math.max(0, contentOwner.score - penaltyAmount)
+        
+        // Determine new status based on score
+        let newStatus: UserStatus = "active"
+        if (newScore <= 15) {
+          newStatus = "banned"
+        } else if (newScore <= 30) {
+          newStatus = "suspended"
+        }
+
+        // Update user score and status
+        const updatedUser = await prisma.user.update({
+          where: { id: contentOwnerId },
+          data: {
+            score: newScore,
+            status: newStatus
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            score: true,
+            status: true
+          }
+        })
+
+        // Mark all reports as resolved
+        await prisma.report.updateMany({
+          where: contentType === "note"
+            ? { noteId: contentId, contentType: "note" }
+            : { flashcardSetId: contentId, contentType: "flashcard" },
+          data: {
+            status: "resolved"
+          }
+        })
+
+        return NextResponse.json(
           {
-            message: "Content validated successfully",
-            report: result
+            message: `Penalty applied: -${penaltyAmount} points (Level ${penaltyLevel})`,
+            user: updatedUser,
+            previousScore: contentOwner.score,
+            newScore,
+            penaltyAmount,
+            statusChanged: contentOwner.status !== newStatus,
+            previousStatus: contentOwner.status,
+            newStatus,
+            totalReportsResolved: reports.length
           },
           { status: 200 }
         )
 
       case "delete_content":
-        // Delete the reported content and update all related reports
-        if (report.contentType === "note" && report.noteId) {
-          // Update all reports first, then delete note
-          await prisma.report.updateMany({
-            where: { 
-              noteId: report.noteId,
-              status: { in: ["pending", "reviewed"] }
-            },
-            data: {
-              status: "resolved"
-            }
-          })
-          
-          // Delete the note (cascades will handle related data)
+        // Update all reports first, then delete content
+        await prisma.report.updateMany({
+          where: contentType === "note"
+            ? { noteId: contentId, contentType: "note" }
+            : { flashcardSetId: contentId, contentType: "flashcard" },
+          data: {
+            status: "resolved"
+          }
+        })
+        
+        // Delete the content (cascades will handle related data)
+        if (contentType === "note") {
           await prisma.note.delete({
-            where: { id: report.noteId }
+            where: { id: contentId }
           })
-
-          return NextResponse.json(
-            {
-              message: "Note deleted successfully and all related reports resolved"
-            },
-            { status: 200 }
-          )
-        } else if (report.contentType === "flashcard" && report.flashcardSetId) {
-          // Update all reports first, then delete flashcard set
-          await prisma.report.updateMany({
-            where: { 
-              flashcardSetId: report.flashcardSetId,
-              status: { in: ["pending", "reviewed"] }
-            },
-            data: {
-              status: "resolved"
-            }
-          })
-          
-          // Delete the flashcard set (cascades will handle related data)
-          await prisma.flashcardSet.delete({
-            where: { id: report.flashcardSetId }
-          })
-
-          return NextResponse.json(
-            {
-              message: "Flashcard set deleted successfully and all related reports resolved"
-            },
-            { status: 200 }
-          )
         } else {
-          return NextResponse.json(
-            { error: "No content found to delete" },
-            { status: 400 }
-          )
+          await prisma.flashcardSet.delete({
+            where: { id: contentId }
+          })
         }
+
+        return NextResponse.json(
+          {
+            message: `${contentType === "note" ? "Note" : "Flashcard set"} deleted successfully`,
+            totalReportsResolved: reports.length
+          },
+          { status: 200 }
+        )
 
       default:
         return NextResponse.json(

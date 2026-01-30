@@ -1,4 +1,3 @@
-// app/api/admin/reports/route.ts
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { ReportStatus, ReportReason } from "@/generated/prisma/enums"
@@ -58,64 +57,154 @@ export async function GET(req: NextRequest) {
       ...(reason && { reason })
     }
 
-    const [totalItems, reports] = await Promise.all([
-      prisma.report.count({ where }),
-      prisma.report.findMany({
-        where,
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              image: true,
-              role: true,
-              status: true,
-              score: true
-            }
-          },
-          note: {
-            select: {
-              id: true,
-              title: true,
-              category: true,
-              visibility: true,
-              user: {
-                select: {
-                  id: true,
-                  name: true
-                }
-              }
-            }
-          },
-          flashcardSet: {
-            select: {
-              id: true,
-              title: true,
-              category: true,
-              visibility: true,
-              user: {
-                select: {
-                  id: true,
-                  name: true
-                }
+    // Fetch all reports with filters
+    const allReports = await prisma.report.findMany({
+      where,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true
+          }
+        },
+        note: {
+          select: {
+            id: true,
+            title: true,
+            category: true,
+            visibility: true,
+            userId: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true
               }
             }
           }
         },
-        orderBy: {
-          createdAt: order
-        },
-        skip,
-        take: limit
-      })
-    ])
+        flashcardSet: {
+          select: {
+            id: true,
+            title: true,
+            category: true,
+            visibility: true,
+            userId: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        createdAt: order
+      }
+    })
 
+    // Group reports by content
+    const groupedMap = new Map<string, any>()
+
+    for (const report of allReports) {
+      const contentKey = report.contentType === "note" 
+        ? `note-${report.noteId}`
+        : `flashcard-${report.flashcardSetId}`
+      
+      if (!groupedMap.has(contentKey)) {
+        const content = report.note || report.flashcardSet
+        
+        groupedMap.set(contentKey, {
+          contentId: report.noteId || report.flashcardSetId,
+          contentType: report.contentType,
+          content: content,
+          contentOwner: content?.user,
+          reports: [],
+          totalReports: 0,
+          latestReportDate: report.createdAt,
+          statuses: new Set<ReportStatus>(),
+          reasons: new Map<ReportReason, number>()
+        })
+      }
+
+      const group = groupedMap.get(contentKey)!
+      
+      // Add report to group
+      group.reports.push({
+        id: report.id,
+        userId: report.userId,
+        user: report.user,
+        reason: report.reason,
+        description: report.description,
+        status: report.status,
+        createdAt: report.createdAt
+      })
+      
+      group.totalReports++
+      group.statuses.add(report.status)
+      
+      // Count reasons
+      const currentCount = group.reasons.get(report.reason) || 0
+      group.reasons.set(report.reason, currentCount + 1)
+      
+      // Update latest report date
+      if (new Date(report.createdAt) > new Date(group.latestReportDate)) {
+        group.latestReportDate = report.createdAt
+      }
+    }
+
+    // Convert to array and format
+    const groupedReports = Array.from(groupedMap.values()).map(group => ({
+      contentId: group.contentId,
+      contentType: group.contentType,
+      content: group.content,
+      contentOwner: group.contentOwner,
+      totalReports: group.totalReports,
+      latestReportDate: group.latestReportDate,
+      statuses: Array.from(group.statuses),
+      reasons: Object.fromEntries(group.reasons),
+      reporters: group.reports.map((r: any) => ({
+        id: r.id,
+        userId: r.userId,
+        userName: r.user.name,
+        userEmail: r.user.email,
+        userImage: r.user.image,
+        reason: r.reason,
+        description: r.description,
+        status: r.status,
+        createdAt: r.createdAt
+      })),
+      // Determine overall status priority: pending > reviewed > resolved/rejected
+      primaryStatus: group.statuses.has("pending" as ReportStatus) 
+        ? "pending" 
+        : group.statuses.has("reviewed" as ReportStatus)
+        ? "reviewed"
+        : group.statuses.has("resolved" as ReportStatus)
+        ? "resolved"
+        : "rejected"
+    }))
+
+    // Sort by latest report date
+    groupedReports.sort((a, b) => {
+      const dateA = new Date(a.latestReportDate).getTime()
+      const dateB = new Date(b.latestReportDate).getTime()
+      return order === "desc" ? dateB - dateA : dateA - dateB
+    })
+
+    // Pagination
+    const totalItems = groupedReports.length
     const totalPages = Math.ceil(totalItems / limit)
+    const paginatedReports = groupedReports.slice(skip, skip + limit)
 
     return NextResponse.json(
       {
-        reports,
+        reports: paginatedReports,
         pagination: {
           totalItems,
           totalPages,
@@ -135,98 +224,3 @@ export async function GET(req: NextRequest) {
     )
   }
 }
-
-export async function POST(req: NextRequest) {
-  try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    const userId = Number(session.user.id);
-    const body = await req.json();
-    const { contentId, contentType, reason, description } = body;
-
-    // Validasi input
-    if (!contentId || !contentType || !["note", "flashcard"].includes(contentType)) {
-      return NextResponse.json(
-        { error: "Invalid request data" },
-        { status: 400 }
-      );
-    }
-
-    // Cek apakah user sudah melakukan report sebelumnya
-    const existingReport = await prisma.report.findFirst({
-      where: {
-        userId,
-        ...(contentType === "note" 
-          ? { noteId: contentId, contentType: "note" }
-          : { flashcardSetId: contentId, contentType: "flashcard" }
-        )
-      }
-    });
-
-    if (existingReport) {
-      // Hapus report jika sudah ada
-      await prisma.report.delete({
-        where: { id: existingReport.id }
-      });
-
-      return NextResponse.json(
-        {
-          isReported: false,
-          message: "Report removed successfully"
-        },
-        { status: 200 }
-      );
-    }
-
-    // Validasi reason
-    if (!reason || !Object.values(ReportReason).includes(reason as ReportReason)) {
-      return NextResponse.json(
-        { error: "Invalid report reason" },
-        { status: 400 }
-      );
-    }
-
-    // Validasi description (optional, max 100 chars)
-    if (description && description.length > 100) {
-      return NextResponse.json(
-        { error: "Description too long (max 100 characters)" },
-        { status: 400 }
-      );
-    }
-
-    // Buat report baru
-    await prisma.report.create({
-      data: {
-        userId,
-        contentType,
-        reason: reason as ReportReason,
-        description: description?.trim() || null,
-        ...(contentType === "note" 
-          ? { noteId: contentId }
-          : { flashcardSetId: contentId }
-        )
-      }
-    });
-
-    return NextResponse.json(
-      {
-        isReported: true,
-        message: "Content reported successfully. Our team will review it shortly."
-      },
-      { status: 200 }
-    );
-  } catch (err) {
-    console.error("Toggle report error:", err);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
-  }
-}
-

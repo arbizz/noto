@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, CheckCircle, Trash2 } from "lucide-react"
+import { ArrowLeft, CheckCircle, Trash2, AlertTriangle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -27,8 +27,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { toast } from "sonner"
 
-import { ReportReason, ReportStatus, ContentType } from "@/generated/prisma/enums"
+import { ReportReason, ReportStatus } from "@/generated/prisma/enums"
 
 type FlashcardData = {
   id: string
@@ -36,67 +37,62 @@ type FlashcardData = {
   answer: string
 }
 
-type ReportDetail = {
+type Reporter = {
   id: number
   userId: number
-  noteId: number | null
-  flashcardSetId: number | null
-  contentType: ContentType
-  reason: ReportReason
-  description: string | null
-  status: ReportStatus
-  createdAt: Date
   user: {
     id: number
     name: string
     email: string
     image: string | null
-    role: string
-    status: string
+    score: number
   }
-  note?: {
-    id: number
-    title: string
-    description: string | null
-    content: any
-    category: string
-    visibility: string
-    createdAt: Date
-    updatedAt: Date
-    user: {
-      id: number
-      name: string
-      email: string
-      image: string | null
-    }
-    _count: {
-      likes: number
-      bookmarks: number
-      reports: number
-    }
-  } | null
-  flashcardSet?: {
-    id: number
-    title: string
-    description: string | null
-    flashcards: FlashcardData[] | any
-    category: string
-    visibility: string
-    createdAt: Date
-    updatedAt: Date
-    user: {
-      id: number
-      name: string
-      email: string
-      image: string | null
-    }
-    _count: {
-      likes: number
-      bookmarks: number
-      reports: number
-    }
-  } | null
+  reason: ReportReason
+  description: string | null
+  status: ReportStatus
+  createdAt: Date
 }
+
+type ReportDetail = {
+  contentId: number
+  contentType: "note" | "flashcard"
+  content: {
+    id: number
+    title: string
+    description: string | null
+    content?: any
+    flashcards?: FlashcardData[]
+    category: string
+    visibility: string
+    createdAt: Date
+    updatedAt: Date
+    userId: number
+    user: {
+      id: number
+      name: string
+      email: string
+      image: string | null
+      score: number
+      status: string
+    }
+    _count: {
+      likes: number
+      bookmarks: number
+      reports: number
+    }
+  } | null
+  totalReports: number
+  reasonCounts: Record<ReportReason, number>
+  statusCounts: Record<ReportStatus, number>
+  reports: Reporter[]
+  latestReport: Reporter
+}
+
+const PENALTY_LEVELS = {
+  1: { label: "Level 1 (Minor)", points: 10, description: "Minor violation" },
+  2: { label: "Level 2 (Moderate)", points: 15, description: "Moderate violation" },
+  3: { label: "Level 3 (Severe)", points: 25, description: "Severe violation" }
+} as const
 
 export default function AdminReportDetailPage({ 
   params 
@@ -108,7 +104,7 @@ export default function AdminReportDetailPage({
   const [report, setReport] = useState<ReportDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
-  const [selectedStatus, setSelectedStatus] = useState<ReportStatus>("pending")
+  const [selectedPenalty, setSelectedPenalty] = useState<1 | 2 | 3>(1)
 
   useEffect(() => {
     fetchReport()
@@ -121,16 +117,16 @@ export default function AdminReportDetailPage({
       if (!res.ok) throw new Error("Failed to fetch report")
       
       const data = await res.json()
-      setReport(data.report)
-      setSelectedStatus(data.report.status)
+      setReport(data)
     } catch (error) {
       console.error("Error fetching report:", error)
+      toast.error("Failed to load report")
     } finally {
       setLoading(false)
     }
   }
 
-  async function handleAction(action: string) {
+  async function handleAction(action: string, penaltyLevel?: 1 | 2 | 3) {
     setActionLoading(true)
     try {
       const res = await fetch(`/api/reports/${resolvedParams.id}/actions`, {
@@ -138,7 +134,7 @@ export default function AdminReportDetailPage({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action,
-          status: action === "update_status" ? selectedStatus : undefined
+          ...(penaltyLevel && { penaltyLevel })
         })
       })
 
@@ -147,14 +143,20 @@ export default function AdminReportDetailPage({
       const data = await res.json()
       
       if (action === "delete_content") {
-        // Redirect back to reports list after deletion
-        router.push("/admin/reports")
+        toast.success(data.message)
+        setTimeout(() => router.push("/admin/reports"), 1000)
+      } else if (action === "reduce_score") {
+        toast.success(data.message, {
+          description: `User score: ${data.previousScore} → ${data.newScore}${data.statusChanged ? ` | Status: ${data.newStatus}` : ""}`
+        })
+        await fetchReport()
       } else {
-        // Refresh the report data
+        toast.success(data.message)
         await fetchReport()
       }
     } catch (error) {
       console.error("Error performing action:", error)
+      toast.error("Action failed")
     } finally {
       setActionLoading(false)
     }
@@ -187,12 +189,18 @@ export default function AdminReportDetailPage({
     }
   }
 
+  function getUserStatusColor(score: number) {
+    if (score <= 15) return "text-red-600 font-semibold"
+    if (score <= 30) return "text-orange-600 font-semibold"
+    if (score <= 50) return "text-yellow-600 font-semibold"
+    return "text-green-600 font-semibold"
+  }
+
   function renderNoteContent(content: any) {
     try {
       if (typeof content === 'string') {
         return content
       }
-      // If it's TipTap JSON format
       if (content?.type === 'doc' && content?.content) {
         return JSON.stringify(content, null, 2)
       }
@@ -218,11 +226,9 @@ export default function AdminReportDetailPage({
     )
   }
 
-  const content = report.note || report.flashcardSet
-  const flashcards = report.flashcardSet?.flashcards 
-    ? (Array.isArray(report.flashcardSet.flashcards) 
-        ? report.flashcardSet.flashcards 
-        : [])
+  const content = report.content
+  const flashcards = content && report.contentType === "flashcard" && content.flashcards
+    ? (Array.isArray(content.flashcards) ? content.flashcards : [])
     : []
 
   return (
@@ -239,60 +245,84 @@ export default function AdminReportDetailPage({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Reports Summary */}
           <Card>
             <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle>Report #{report.id}</CardTitle>
-                  <CardDescription>
-                    Reported on {formatDate(report.createdAt)}
-                  </CardDescription>
-                </div>
-                <Badge variant={getStatusBadgeVariant(report.status)}>
-                  {report.status}
-                </Badge>
-              </div>
+              <CardTitle>Reports Summary</CardTitle>
+              <CardDescription>
+                {report.totalReports} {report.totalReports === 1 ? "person has" : "people have"} reported this content
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label className="text-sm font-semibold">Reporter</Label>
-                <div className="mt-2 flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                    {report.user.image ? (
-                      <img 
-                        src={report.user.image} 
-                        alt={report.user.name}
-                        className="h-full w-full rounded-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-lg font-medium">
-                        {report.user.name.charAt(0).toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <p className="font-medium">{report.user.name}</p>
-                    <p className="text-sm text-muted-foreground">{report.user.email}</p>
-                  </div>
+                <Label className="text-sm font-semibold">Report Reasons</Label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {Object.entries(report.reasonCounts).map(([reason, count]) => (
+                    <Badge key={reason} variant="outline">
+                      {formatReasonLabel(reason)}: {count}
+                    </Badge>
+                  ))}
                 </div>
               </div>
 
               <Separator />
 
               <div>
-                <Label className="text-sm font-semibold">Reason</Label>
-                <p className="mt-2">{formatReasonLabel(report.reason)}</p>
+                <Label className="text-sm font-semibold">Status Distribution</Label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {Object.entries(report.statusCounts).map(([status, count]) => (
+                    <Badge key={status} variant={getStatusBadgeVariant(status as ReportStatus)}>
+                      {status}: {count}
+                    </Badge>
+                  ))}
+                </div>
               </div>
+            </CardContent>
+          </Card>
 
-              {report.description && (
-                <>
-                  <Separator />
-                  <div>
-                    <Label className="text-sm font-semibold">Description</Label>
-                    <p className="mt-2 text-muted-foreground">{report.description}</p>
+          {/* Individual Reports */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Individual Reports ({report.reports.length})</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 max-h-96 overflow-y-auto">
+              {report.reports.map((r) => (
+                <div key={r.id} className="p-4 border rounded-lg space-y-2">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                        {r.user.image ? (
+                          <img 
+                            src={r.user.image} 
+                            alt={r.user.name}
+                            className="h-full w-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-lg font-medium">
+                            {r.user.name.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium">{r.user.name}</p>
+                        <p className="text-xs text-muted-foreground">{r.user.email}</p>
+                      </div>
+                    </div>
+                    <Badge variant={getStatusBadgeVariant(r.status)}>
+                      {r.status}
+                    </Badge>
                   </div>
-                </>
-              )}
+                  <div className="ml-13">
+                    <p className="text-sm"><span className="font-semibold">Reason:</span> {formatReasonLabel(r.reason)}</p>
+                    {r.description && (
+                      <p className="text-sm text-muted-foreground mt-1">{r.description}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Reported on {formatDate(r.createdAt)}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </CardContent>
           </Card>
 
@@ -342,12 +372,12 @@ export default function AdminReportDetailPage({
                     <span>🚩 {content._count.reports} reports</span>
                   </div>
 
-                  {report.contentType === "note" && report.note && (
+                  {report.contentType === "note" && content.content && (
                     <div>
                       <Label className="text-sm font-semibold">Content Preview</Label>
                       <div className="mt-2 p-4 bg-muted rounded-lg max-h-96 overflow-y-auto">
                         <pre className="text-sm whitespace-pre-wrap font-mono">
-                          {renderNoteContent(report.note.content)}
+                          {renderNoteContent(content.content)}
                         </pre>
                       </div>
                     </div>
@@ -390,6 +420,9 @@ export default function AdminReportDetailPage({
                       <div>
                         <p className="font-medium text-sm">{content.user.name}</p>
                         <p className="text-xs text-muted-foreground">{content.user.email}</p>
+                        <p className={`text-xs ${getUserStatusColor(content.user.score)}`}>
+                          Score: {content.user.score} | Status: {content.user.status}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -408,45 +441,79 @@ export default function AdminReportDetailPage({
               <CardTitle>Admin Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="status">Update Status</Label>
-                <Select
-                  value={selectedStatus}
-                  onValueChange={(value) => setSelectedStatus(value as ReportStatus)}
-                >
-                  <SelectTrigger id="status" className="mt-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="reviewed">Reviewed</SelectItem>
-                    <SelectItem value="resolved">Resolved</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               <Button
-                onClick={() => handleAction("update_status")}
-                disabled={actionLoading || selectedStatus === report.status}
+                onClick={() => handleAction("set_reviewed")}
+                disabled={actionLoading || !content}
+                variant="outline"
                 className="w-full"
               >
-                Update Status
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Set as Reviewed
               </Button>
 
               <Separator />
 
               {content && (
                 <>
-                  <Button
-                    onClick={() => handleAction("validate_content")}
-                    disabled={actionLoading}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Validate Content
-                  </Button>
+                  <div>
+                    <Label htmlFor="penalty">Apply Penalty</Label>
+                    <Select
+                      value={String(selectedPenalty)}
+                      onValueChange={(value) => setSelectedPenalty(Number(value) as 1 | 2 | 3)}
+                    >
+                      <SelectTrigger id="penalty" className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(PENALTY_LEVELS).map(([level, data]) => (
+                          <SelectItem key={level} value={level}>
+                            {data.label} (-{data.points} pts)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {PENALTY_LEVELS[selectedPenalty].description}
+                    </p>
+                  </div>
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        className="w-full"
+                        disabled={actionLoading}
+                      >
+                        <AlertTriangle className="mr-2 h-4 w-4" />
+                        Reduce Score (-{PENALTY_LEVELS[selectedPenalty].points} pts)
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Apply Penalty?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will reduce <strong>{content.user.name}</strong>'s score by{" "}
+                          <strong>{PENALTY_LEVELS[selectedPenalty].points} points</strong> ({PENALTY_LEVELS[selectedPenalty].label}).
+                          <br /><br />
+                          Current score: <strong>{content.user.score}</strong><br />
+                          New score: <strong>{Math.max(0, content.user.score - PENALTY_LEVELS[selectedPenalty].points)}</strong>
+                          <br /><br />
+                          All reports for this content will be marked as resolved.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleAction("reduce_score", selectedPenalty)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Apply Penalty
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+
+                  <Separator />
 
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -464,7 +531,7 @@ export default function AdminReportDetailPage({
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
                           This action cannot be undone. This will permanently delete the{" "}
-                          {report.contentType} and all related data. All reports for this content
+                          {report.contentType} and all related data. All {report.totalReports} reports for this content
                           will be marked as resolved.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
@@ -491,22 +558,20 @@ export default function AdminReportDetailPage({
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div>
-                <Label className="text-xs text-muted-foreground">Report ID</Label>
-                <p className="font-medium">#{report.id}</p>
-              </div>
-              <div>
                 <Label className="text-xs text-muted-foreground">Content Type</Label>
                 <p className="font-medium capitalize">{report.contentType}</p>
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground">Content ID</Label>
-                <p className="font-medium">
-                  #{report.noteId || report.flashcardSetId || "N/A"}
-                </p>
+                <p className="font-medium">#{report.contentId}</p>
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Created At</Label>
-                <p className="font-medium">{formatDate(report.createdAt)}</p>
+                <Label className="text-xs text-muted-foreground">Total Reports</Label>
+                <p className="font-medium">{report.totalReports}</p>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Latest Report</Label>
+                <p className="font-medium">{formatDate(report.latestReport.createdAt)}</p>
               </div>
             </CardContent>
           </Card>
