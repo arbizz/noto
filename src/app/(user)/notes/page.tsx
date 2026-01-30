@@ -186,6 +186,7 @@ export default function NotesPage() {
               content={note}
               onClick={() => router.push(`/notes/${note.id}`)}
               showActions={false}
+              showLikeOnly={true}
             />
           ))}
         </div>

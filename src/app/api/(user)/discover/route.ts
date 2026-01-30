@@ -42,6 +42,7 @@ export async function GET(req: NextRequest) {
 
     const baseWhere = {
       visibility: "public" as const,
+      userId: { not: userId },
       ...(category && { category }),
       ...(search && { title: { contains: search } })
     }

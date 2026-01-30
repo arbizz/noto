@@ -49,6 +49,7 @@ function NFCard({
   onLike,
   onReport,
   showActions = false,
+  showLikeOnly = false,
   ...props
 }: {
   content: NoteWithExtras | FlashcardSetWithExtras
@@ -57,6 +58,7 @@ function NFCard({
   onLike?: (e: React.MouseEvent) => void
   onReport?: (e: React.MouseEvent) => void
   showActions?: boolean
+  showLikeOnly?: boolean
 }) {
   const likesCount = content._count?.likes ?? 0
   const isBookmarked = content.isBookmarked ?? false
@@ -141,20 +143,43 @@ function NFCard({
           </Badge>
         </div>
 
-        {content.visibility === "public" && onLike && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button size="icon" variant="ghost" onClick={onLike}>
-                <LucideHeart 
-                  className={`h-4 w-4 ${isLiked ? "fill-red-500 text-red-500" : ""}`} 
-                />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <span className="text-xs font-medium">{likesCount}</span>
-            </TooltipContent>
-          </Tooltip>
-        )}
+        {content.visibility === "public" && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="icon" variant="ghost" onClick={showLikeOnly ? undefined : onLike}>
+                  <LucideHeart 
+                    className={`h-4 w-4 ${isLiked ? "fill-red-500 text-red-500" : ""}`} 
+                  />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <span className="text-xs font-medium">{likesCount}</span>
+              </TooltipContent>
+            </Tooltip>
+          )          
+        }
+
+        {/* {showLikeOnly ? (
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <LucideHeart className="h-4 w-4" />
+            <span className="text-xs font-medium">{likesCount}</span>
+          </div>
+        ) : (
+          content.visibility === "public" && onLike && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="icon" variant="ghost" onClick={onLike}>
+                  <LucideHeart 
+                    className={`h-4 w-4 ${isLiked ? "fill-red-500 text-red-500" : ""}`} 
+                  />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <span className="text-xs font-medium">{likesCount}</span>
+              </TooltipContent>
+            </Tooltip>
+          )
+        )} */}
       </CardFooter>
     </Card>
   )

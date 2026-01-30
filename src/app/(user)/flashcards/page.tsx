@@ -186,6 +186,7 @@ export default function FlashcardsPage() {
               content={flashcard}
               onClick={() => router.push(`/flashcards/${flashcard.id}`)}
               showActions={false}
+              showLikeOnly={true}
             />
           ))}
         </div>

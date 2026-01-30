@@ -3,10 +3,11 @@
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FlashcardSet, Note } from "@/generated/prisma/client"
-import { ContentCategory } from "@/generated/prisma/enums"
+import { ContentCategory, ReportReason } from "@/generated/prisma/enums"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { NFCard } from "@/components/user/NFCard"
+import { ReportDialog } from "@/components/user/ReportDialog"
 import { toast } from "sonner"
 import { FilterConfig, InputFilter } from "@/components/shared/InputFilter"
 import { PagePagination } from "@/components/shared/PagePagination"
@@ -33,6 +34,7 @@ type NoteWithUser = Note & {
   }
   isBookmarked: boolean
   isLiked: boolean
+  isReported: boolean
 }
 
 type FlashcardSetWithUser = FlashcardSet & {
@@ -46,6 +48,14 @@ type FlashcardSetWithUser = FlashcardSet & {
   }
   isBookmarked: boolean
   isLiked: boolean
+  isReported: boolean
+}
+
+type ReportDialogState = {
+  open: boolean
+  contentId: number | null
+  contentType: "note" | "flashcard" | null
+  contentTitle: string
 }
 
 export default function BookmarksPage() {
@@ -57,6 +67,13 @@ export default function BookmarksPage() {
   const [fpagination, setFPagination] = useState<PaginationMeta | null>(null)
   const [npagination, setNPagination] = useState<PaginationMeta | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+
+  const [reportDialog, setReportDialog] = useState<ReportDialogState>({
+    open: false,
+    contentId: null,
+    contentType: null,
+    contentTitle: ""
+  })
 
   const [search, setSearch] = useState(() => {
     return searchParams.get("search") ?? ""
@@ -93,6 +110,49 @@ export default function BookmarksPage() {
     router.push(`?${params.toString()}`)
   }
 
+  async function handleToggleBookmark(
+    contentId: number,
+    contentType: "note" | "flashcard",
+    e: React.MouseEvent
+  ) {
+    e.stopPropagation()
+
+    try {
+      const res = await fetch("/api/bookmarks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          contentId,
+          contentType
+        })
+      })
+
+      if (!res.ok) {
+        throw new Error("Failed to toggle bookmark")
+      }
+
+      const data = await res.json()
+
+      if (!data.isBookmarked) {
+        if (contentType === "note") {
+          setNotes(prev => prev.filter(note => note.id !== contentId))
+        } else {
+          setFlashcards(prev => prev.filter(flashcard => flashcard.id !== contentId))
+        }
+      }
+
+      const notif = data.isBookmarked ? "Bookmarked" : "Bookmark removed"
+      toast(notif, {
+        description: data.message
+      })
+    } catch (error) {
+      console.error("Error toggling bookmark:", error)
+      toast.error("Error toggling bookmark")
+    }
+  }
+
   async function handleToggleLike(
     contentId: number,
     contentType: "note" | "flashcard",
@@ -101,7 +161,7 @@ export default function BookmarksPage() {
     e.stopPropagation()
 
     try {
-      const res = await fetch("/api/likes/toggle", {
+      const res = await fetch("/api/likes", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -157,6 +217,82 @@ export default function BookmarksPage() {
     } catch (error) {
       console.error("Error toggling like:", error)
       toast.error("Error toggling like")
+    }
+  }
+
+  function handleOpenReportDialog(
+    contentId: number,
+    contentType: "note" | "flashcard",
+    contentTitle: string,
+    isReported: boolean,
+    e: React.MouseEvent
+  ) {
+    e.stopPropagation()
+
+    if (isReported) {
+      handleSubmitReport(contentId, contentType, ReportReason.spam)
+      return
+    }
+
+    setReportDialog({
+      open: true,
+      contentId,
+      contentType,
+      contentTitle
+    })
+  }
+
+  async function handleSubmitReport(
+    contentId: number,
+    contentType: "note" | "flashcard",
+    reason: ReportReason,
+    description?: string
+  ) {
+    try {
+      const res = await fetch("/api/reports", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          contentId,
+          contentType,
+          reason,
+          description
+        })
+      })
+
+      if (!res.ok) {
+        throw new Error("Failed to toggle report")
+      }
+
+      const data = await res.json()
+
+      if (contentType === "note") {
+        setNotes(prev =>
+          prev.map(note =>
+            note.id === contentId
+              ? { ...note, isReported: data.isReported }
+              : note
+          )
+        )
+      } else {
+        setFlashcards(prev =>
+          prev.map(flashcard =>
+            flashcard.id === contentId
+              ? { ...flashcard, isReported: data.isReported }
+              : flashcard
+          )
+        )
+      }
+
+      const notif = data.isReported ? "Content reported" : "Report removed"
+      toast(notif, {
+        description: data.message
+      })
+    } catch (error) {
+      console.error("Error toggling report:", error)
+      toast.error("Error toggling report")
     }
   }
 
@@ -311,7 +447,9 @@ export default function BookmarksPage() {
                     key={n.id} 
                     content={n} 
                     onClick={() => router.push(`/notes/${n.id}`)}
+                    onBookmark={(e) => handleToggleBookmark(n.id, "note", e)}
                     onLike={(e) => handleToggleLike(n.id, "note", e)}
+                    onReport={(e) => handleOpenReportDialog(n.id, "note", n.title, n.isReported, e)}
                     showActions={true}
                   />
                 ))}
@@ -335,7 +473,9 @@ export default function BookmarksPage() {
                     key={f.id} 
                     content={f} 
                     onClick={() => router.push(`/flashcards/${f.id}`)}
+                    onBookmark={(e) => handleToggleBookmark(f.id, "flashcard", e)}
                     onLike={(e) => handleToggleLike(f.id, "flashcard", e)}
+                    onReport={(e) => handleOpenReportDialog(f.id, "flashcard", f.title, f.isReported, e)}
                     showActions={true}
                   />
                 ))}
@@ -353,6 +493,22 @@ export default function BookmarksPage() {
           />
         )}
       </section>
+
+      {/* Report Dialog */}
+      <ReportDialog
+        open={reportDialog.open}
+        onOpenChange={(open: boolean) => setReportDialog(prev => ({ ...prev, open }))}
+        onSubmit={async (reason: ReportReason, description?: string) => {
+          await handleSubmitReport(
+            reportDialog.contentId!,
+            reportDialog.contentType!,
+            reason,
+            description
+          )
+        }}
+        contentTitle={reportDialog.contentTitle}
+        contentType={reportDialog.contentType || "note"}
+      />
     </>
   )
 }

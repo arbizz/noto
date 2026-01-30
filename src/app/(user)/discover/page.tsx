@@ -117,7 +117,7 @@ export default function DiscoverPage() {
     e.stopPropagation()
 
     try {
-      const res = await fetch("/api/bookmarks/toggle", {
+      const res = await fetch("/api/bookmarks", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -170,7 +170,7 @@ export default function DiscoverPage() {
     e.stopPropagation()
 
     try {
-      const res = await fetch("/api/likes/toggle", {
+      const res = await fetch("/api/likes", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -260,7 +260,7 @@ export default function DiscoverPage() {
     description?: string
   ) {
     try {
-      const res = await fetch("/api/reports/toggle", {
+      const res = await fetch("/api/reports", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
