@@ -34,6 +34,8 @@ import {
 import { Badge } from "@/components/ui/badge"
 
 import { ReportReason, ReportStatus, ContentType } from "@/generated/prisma/enums"
+import { FilterConfig, InputFilter } from "@/components/shared/InputFilter"
+import { PagePagination } from "@/components/shared/PagePagination"
 
 type ReportWithRelations = {
   id: number
@@ -79,29 +81,13 @@ type PaginationMeta = {
   hasPreviousPage: boolean
 }
 
-const reportStatuses = [
-  { value: "pending", label: "Pending" },
-  { value: "reviewed", label: "Reviewed" },
-  { value: "resolved", label: "Resolved" },
-  { value: "rejected", label: "Rejected" },
-]
-
-const reportReasons = [
-  { value: "inappropriate_content", label: "Inappropriate Content" },
-  { value: "incorrect_information", label: "Incorrect Information" },
-  { value: "misleading_explanation", label: "Misleading Explanation" },
-  { value: "plagiarism", label: "Plagiarism" },
-  { value: "spam", label: "Spam" },
-  { value: "other", label: "Other" },
-]
-
 export default function AdminReportsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
   const [reports, setReports] = useState<ReportWithRelations[]>([])
   const [pagination, setPagination] = useState<PaginationMeta | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
 
   const [status, setStatus] = useState<StatusFilter>(() => {
     return searchParams.get("status") as ReportStatus ?? "all"
@@ -130,12 +116,6 @@ export default function AdminReportsPage() {
     }
 
     router.push(`?${params.toString()}`)
-  }
-
-  function createPageUrl(page: number) {
-    const params = new URLSearchParams(searchParams.toString())
-    params.set("page", String(page))
-    return `?${params.toString()}`
   }
 
   function formatDate(date: Date) {
@@ -172,7 +152,7 @@ export default function AdminReportsPage() {
 
   useEffect(() => {
     async function fetchData() {
-      setLoading(true)
+      setIsLoading(true)
       try {
         const res = await fetch(
           `/api/reports?${searchParams.toString()}`,
@@ -214,12 +194,46 @@ export default function AdminReportsPage() {
       } catch (error) {
         console.error("Error fetching reports:", error)
       } finally {
-        setLoading(false)
+        setIsLoading(false)
       }
     }
 
     fetchData()
   }, [searchParams])
+
+  const filters: FilterConfig[] = [
+    {
+      type: "status",
+      value: status,
+      onChange: (value) => {
+        const v = value as StatusFilter
+        setStatus(v)
+        handleUpdateQuery({
+          status: v === "all" ? undefined : v,
+        })
+      }
+    },
+    {
+      type: "reason",
+      value: reason,
+      onChange: (value) => {
+        const v = value as ReasonFilter
+        setReason(v)
+        handleUpdateQuery({
+          reason: v === "all" ? undefined : v,
+        })
+      }
+    },
+    {
+      type: "order",
+      value: order,
+      onChange: (value) => {
+        const v = value as "asc" | "desc"
+        setOrder(v)
+        handleUpdateQuery({ order: v })
+      }
+    }
+  ]
 
   return (
     <>
@@ -231,78 +245,17 @@ export default function AdminReportsPage() {
       </section>
 
       <section className="mb-8 flex flex-col gap-6 rounded-xl border bg-card p-6 shadow-sm">
-        <div className="grid grid-cols-3 w-full gap-4">
-          <Select
-            value={status}
-            onValueChange={(value) => {
-              const v = value as StatusFilter
-              setStatus(v)
-              handleUpdateQuery({
-                status: v === "all" ? undefined : v,
-              })
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              {reportStatuses.map((s) => (
-                <SelectItem key={s.value} value={s.value}>
-                  {s.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={reason}
-            onValueChange={(value) => {
-              const v = value as ReasonFilter
-              setReason(v)
-              handleUpdateQuery({
-                reason: v === "all" ? undefined : v,
-              })
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Reason" />
-            </SelectTrigger>
-
-            <SelectContent>
-              <SelectItem value="all">All Reasons</SelectItem>
-              {reportReasons.map((r) => (
-                <SelectItem key={r.value} value={r.value}>
-                  {r.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={order}
-            onValueChange={(value) => {
-              const v = value as "asc" | "desc"
-              setOrder(v)
-              handleUpdateQuery({ order: v })
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Order" />
-            </SelectTrigger>
-
-            <SelectContent>
-              <SelectItem value="desc">Newest</SelectItem>
-              <SelectItem value="asc">Oldest</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <InputFilter
+          filters={filters}
+          showStatus
+          showReason
+          showOrder
+        />
       </section>
 
       <section className="flex flex-col gap-4">
         <div className="rounded-xl border bg-card shadow-sm">
-          {loading ? (
+          {isLoading ? (
             <div className="p-8 text-center text-muted-foreground">
               Loading reports...
             </div>
@@ -386,109 +339,8 @@ export default function AdminReportsPage() {
       </section>
 
       <section className="mt-10 flex justify-center">
-        {pagination && pagination.totalPages > 1 && (
-          <Pagination>
-            <PaginationContent className="gap-1">
-              <PaginationItem>
-                <PaginationPrevious
-                  href={
-                    pagination.hasPreviousPage
-                      ? createPageUrl(
-                          pagination.currentPage - 1
-                        )
-                      : "#"
-                  }
-                  aria-disabled={
-                    !pagination.hasPreviousPage
-                  }
-                  className={
-                    !pagination.hasPreviousPage
-                      ? "pointer-events-none opacity-50"
-                      : "cursor-pointer"
-                  }
-                />
-              </PaginationItem>
-
-              {(() => {
-                const total = pagination.totalPages
-                const current = pagination.currentPage
-                const pages: (number | string)[] = []
-
-                pages.push(1)
-
-                if (current > 3) {
-                  pages.push("ellipsis-start")
-                }
-
-                const neighbors = [
-                  current - 1,
-                  current,
-                  current + 1,
-                ].filter(
-                  (p) => p > 1 && p < total
-                )
-
-                pages.push(...neighbors)
-
-                if (current < total - 2) {
-                  pages.push("ellipsis-end")
-                }
-
-                if (total > 1) {
-                  pages.push(total)
-                }
-
-                return pages.map((page, index) => {
-                  if (
-                    page === "ellipsis-start" ||
-                    page === "ellipsis-end"
-                  ) {
-                    return (
-                      <PaginationItem
-                        key={`ellipsis-${index}`}
-                      >
-                        <PaginationEllipsis />
-                      </PaginationItem>
-                    )
-                  }
-
-                  const pageNumber = page as number
-
-                  return (
-                    <PaginationItem key={pageNumber}>
-                      <PaginationLink
-                        href={createPageUrl(pageNumber)}
-                        isActive={
-                          pagination.currentPage ===
-                          pageNumber
-                        }
-                      >
-                        {pageNumber}
-                      </PaginationLink>
-                    </PaginationItem>
-                  )
-                })
-              })()}
-
-              <PaginationItem>
-                <PaginationNext
-                  href={
-                    pagination.hasNextPage
-                      ? createPageUrl(
-                          pagination.currentPage + 1
-                        )
-                      : "#"
-                  }
-                  aria-disabled={!pagination.hasNextPage}
-                  className={
-                    !pagination.hasNextPage
-                      ? "pointer-events-none opacity-50"
-                      : "cursor-pointer"
-                  }
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+        {pagination && pagination.totalPages > 1 && !isLoading && (
+          <PagePagination pagination={pagination} searchParams={searchParams} />
         )}
       </section>
     </>
