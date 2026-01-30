@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger 
 } from "../ui/dropdown-menu"
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip"
 
 type NoteWithExtras = Note & {
   user?: {
@@ -96,15 +97,6 @@ function NFCard({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                {onLike && (
-                  <DropdownMenuItem onClick={onLike} className="gap-2 cursor-pointer">
-                    <LucideHeart 
-                      className={`h-4 w-4 ${isLiked ? "fill-red-500 text-red-500" : ""}`} 
-                    />
-                    <span>{isLiked ? "Unlike" : "Like"}</span>
-                  </DropdownMenuItem>
-                )}
-                
                 {onBookmark && (
                   <DropdownMenuItem onClick={onBookmark} className="gap-2 cursor-pointer">
                     <LucideBookmark 
@@ -149,11 +141,19 @@ function NFCard({
           </Badge>
         </div>
 
-        {content.visibility === "public" && (
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <LucideHeart className="h-4 w-4 group-hover:text-red-500 transition-colors" />
-            <span className="text-xs font-medium">{likesCount}</span>
-          </div>
+        {content.visibility === "public" && onLike && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="icon" variant="ghost" onClick={onLike}>
+                <LucideHeart 
+                  className={`h-4 w-4 ${isLiked ? "fill-red-500 text-red-500" : ""}`} 
+                />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <span className="text-xs font-medium">{likesCount}</span>
+            </TooltipContent>
+          </Tooltip>
         )}
       </CardFooter>
     </Card>

@@ -15,11 +15,25 @@ import { FilterConfig, InputFilter } from "@/components/shared/InputFilter"
 import { PaginationMeta } from "@/types/shared/pagination"
 import { CategoryFilter, VisibilityFilter } from "@/types/shared/filter"
 
+type FlashcardSetWithExtras = FlashcardSet & {
+  user?: {
+    id: number
+    name: string
+    image: string | null
+  }
+  _count?: {
+    likes: number
+  }
+  isBookmarked?: boolean
+  isLiked?: boolean
+  isReported?: boolean
+}
+
 export default function FlashcardsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const [flashcards, setFlashcards] = useState<FlashcardSet[]>([])
+  const [flashcards, setFlashcards] = useState<FlashcardSetWithExtras[]>([])
   const [pagination, setPagination] = useState<PaginationMeta | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -65,7 +79,7 @@ export default function FlashcardsPage() {
         const {
           flashcards,
           pagination,
-        }: { flashcards: FlashcardSet[]; pagination: PaginationMeta } = data
+        }: { flashcards: FlashcardSetWithExtras[]; pagination: PaginationMeta } = data
 
         const requestedPage = parseInt(searchParams.get("page") ?? "1")
 
@@ -171,6 +185,7 @@ export default function FlashcardsPage() {
               key={flashcard.id}
               content={flashcard}
               onClick={() => router.push(`/flashcards/${flashcard.id}`)}
+              showActions={false}
             />
           ))}
         </div>

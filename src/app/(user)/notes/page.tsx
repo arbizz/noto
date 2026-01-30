@@ -15,11 +15,25 @@ import { FilterConfig, InputFilter } from "@/components/shared/InputFilter"
 import { PaginationMeta } from "@/types/shared/pagination"
 import { CategoryFilter, VisibilityFilter } from "@/types/shared/filter"
 
+type NoteWithExtras = Note & {
+  user?: {
+    id: number
+    name: string
+    image: string | null
+  }
+  _count?: {
+    likes: number
+  }
+  isBookmarked?: boolean
+  isLiked?: boolean
+  isReported?: boolean
+}
+
 export default function NotesPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const [notes, setNotes] = useState<Note[]>([])
+  const [notes, setNotes] = useState<NoteWithExtras[]>([])
   const [pagination, setPagination] = useState<PaginationMeta | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -65,7 +79,7 @@ export default function NotesPage() {
         const {
           notes,
           pagination,
-        }: { notes: Note[]; pagination: PaginationMeta } = data
+        }: { notes: NoteWithExtras[]; pagination: PaginationMeta } = data
 
         const requestedPage = parseInt(searchParams.get("page") ?? "1")
 
@@ -171,6 +185,7 @@ export default function NotesPage() {
               key={note.id}
               content={note}
               onClick={() => router.push(`/notes/${note.id}`)}
+              showActions={false}
             />
           ))}
         </div>

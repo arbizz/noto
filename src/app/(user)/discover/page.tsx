@@ -1,16 +1,10 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { categories } from "@/constants/user"
 import { FlashcardSet, Note } from "@/generated/prisma/client"
 import { ContentCategory, ReportReason } from "@/generated/prisma/enums"
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-import { LucideSearch } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationEllipsis, PaginationLink, PaginationNext } from "@/components/ui/pagination"
 import { NFCard } from "@/components/user/NFCard"
 import { ReportDialog } from "@/components/user/ReportDialog"
 import { toast } from "sonner"
@@ -113,12 +107,6 @@ export default function DiscoverPage() {
     }
 
     router.push(`?${params.toString()}`)
-  }
-
-  function createPageUrl(page: number) {
-    const params = new URLSearchParams(searchParams.toString())
-    params.set("page", String(page))
-    return `?${params.toString()}`
   }
 
   async function handleToggleBookmark(

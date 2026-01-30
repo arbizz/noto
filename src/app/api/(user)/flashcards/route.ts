@@ -21,23 +21,23 @@ export async function GET(req: NextRequest) {
     const rawPage = searchParams.get("page")
     const limit = 12
 
-    const category = Object.values(ContentCategory).includes(rawCategory as ContentCategory)
+    const category = rawCategory && Object.values(ContentCategory).includes(rawCategory as ContentCategory)
       ? (rawCategory as ContentCategory)
       : undefined
 
-    const order: "asc" | "desc" = rawOrder === "desc" || rawOrder === "asc" 
-      ? rawOrder 
+    const order: "asc" | "desc" = rawOrder === "asc" 
+      ? "asc" 
       : "desc"
 
     const visibility = rawVisibilty === "public" || rawVisibilty === "private"
       ? rawVisibilty
-        : undefined
+      : undefined
 
     const search = rawSearch && rawSearch.trim().length > 0
       ? rawSearch.trim()
       : undefined
 
-    const page = rawPage && Number(rawPage)
+    const page = rawPage && !isNaN(Number(rawPage)) && Number(rawPage) > 0
       ? Number(rawPage)
       : 1
 
@@ -53,33 +53,46 @@ export async function GET(req: NextRequest) {
     })
 
     const flashcards = await prisma.flashcardSet.findMany({
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        likes: true,
-        visibility: true,
-        category: true,
-        createdAt: true,
-      },
       where: {
         userId,
         ...(category && { category }),
         ...(visibility && { visibility }),
         ...(search && { title: { contains: search } })
       },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true
+          }
+        },
+        _count: {
+          select: {
+            likes: true
+          }
+        }
+      },
       orderBy: {
         createdAt: order,
       },
       skip: skip,
-      take:limit
+      take: limit
     })
+
+    const flashcardsWithFlags = flashcards.map(flashcard => ({
+      ...flashcard,
+      isBookmarked: false,
+      isLiked: false,
+      isReported: false
+    }))
 
     const totalPages = Math.ceil(totalFlashcardsCount / limit)
 
     return NextResponse.json(
-      { message: "nice",
-        flashcards: flashcards,
+      { 
+        message: "nice",
+        flashcards: flashcardsWithFlags,
         pagination: {
           totalItems: totalFlashcardsCount,
           totalPages: totalPages,

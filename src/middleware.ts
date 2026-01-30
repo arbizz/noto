@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth"
 import { NextResponse } from "next/server"
 
 const publicRoutes = ["/", "/login", "/register"]
-const userRoutes = ["/dashboard", "/flashcards", "/notes", "/discover"]
+const userRoutes = ["/dashboard", "/flashcards", "/notes", "/discover", "/bookmarks"]
 const adminRoutes = ["/admin"]
 
 export const runtime = "nodejs"
@@ -48,6 +48,7 @@ export const config = {
     "/dashboard/:path*",
     "/flashcards/:path*",
     "/discover:path*",
+    "/bookmarks:path*",
     "/notes/:path*",
     "/admin/:path*",
   ],

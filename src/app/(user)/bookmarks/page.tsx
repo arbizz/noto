@@ -1,16 +1,11 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { categories } from "@/constants/user"
 import { FlashcardSet, Note } from "@/generated/prisma/client"
 import { ContentCategory } from "@/generated/prisma/enums"
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-import { LucideSearch } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationEllipsis, PaginationLink, PaginationNext } from "@/components/ui/pagination"
 import { NFCard } from "@/components/user/NFCard"
 import { toast } from "sonner"
 import { FilterConfig, InputFilter } from "@/components/shared/InputFilter"
@@ -96,12 +91,6 @@ export default function BookmarksPage() {
     }
 
     router.push(`?${params.toString()}`)
-  }
-
-  function createPageUrl(page: number) {
-    const params = new URLSearchParams(searchParams.toString())
-    params.set("page", String(page))
-    return `?${params.toString()}`
   }
 
   async function handleToggleLike(
@@ -323,7 +312,7 @@ export default function BookmarksPage() {
                     content={n} 
                     onClick={() => router.push(`/notes/${n.id}`)}
                     onLike={(e) => handleToggleLike(n.id, "note", e)}
-                    // showLike
+                    showActions={true}
                   />
                 ))}
               </div>
@@ -347,7 +336,7 @@ export default function BookmarksPage() {
                     content={f} 
                     onClick={() => router.push(`/flashcards/${f.id}`)}
                     onLike={(e) => handleToggleLike(f.id, "flashcard", e)}
-                    // showLike
+                    showActions={true}
                   />
                 ))}
               </div>
