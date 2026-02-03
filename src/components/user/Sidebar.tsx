@@ -8,6 +8,7 @@ import { LucideLogOut, LucidePanelLeft, LucideSquare } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { usePathname } from "next/navigation"
 import { Separator } from "../ui/separator"
+import { NotificationBell } from "@/components/shared/NotificationBell"
 
 function UserSidebar() {
   const [isOpen, setIsOpen] = useState<boolean>(false)
@@ -23,6 +24,9 @@ function UserSidebar() {
             >
               <Image src="/placeholder.svg" alt="Noto logo" width={24} height={24} />
             </Link>
+            <div className="absolute top-3 left-14">
+              <NotificationBell />
+            </div>
             <Button
               variant="ghost"
               size="icon"

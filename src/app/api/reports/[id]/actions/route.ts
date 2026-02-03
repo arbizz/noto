@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { ReportStatus, UserStatus } from "@/generated/prisma/enums"
 import { NextRequest, NextResponse } from "next/server"
+import { createNotification, createBulkNotifications } from "@/lib/notifications"
 
 type ActionType = "set_reviewed" | "delete_content" | "reduce_score"
 type PenaltyLevel = 1 | 2 | 3
@@ -104,6 +105,16 @@ export async function POST(
           }
         })
 
+        const reporterNotifications = reports.map(report => ({
+          userId: report.userId,
+          type: "report_reviewed" as const,
+          title: "Report Sedang Ditinjau",
+          message: `Laporan Anda untuk ${contentType === "note" ? "catatan" : "flashcard"} sedang ditinjau oleh admin.`,
+          link: undefined
+        }))
+
+        await createBulkNotifications(reporterNotifications)
+
         return NextResponse.json(
           { 
             message: "All reports marked as reviewed",
@@ -172,6 +183,23 @@ export async function POST(
           }
         })
 
+        await createNotification({
+          userId: contentOwnerId,
+          type: "score_reduced",
+          title: "Peringatan: Skor Dikurangi",
+          message: `Skor Anda dikurangi ${penaltyAmount} poin karena pelanggaran konten. Skor sekarang: ${newScore}.`,
+          link: undefined
+        })
+        // Notify reporters that issue is resolved
+        const resolvedNotifications = reports.map(report => ({
+          userId: report.userId,
+          type: "report_resolved" as const,
+          title: "Laporan Diselesaikan",
+          message: `Terima kasih! Laporan Anda telah ditindaklanjuti oleh admin.`,
+          link: undefined
+        }))
+        await createBulkNotifications(resolvedNotifications)
+
         return NextResponse.json(
           {
             message: `Penalty applied: -${penaltyAmount} points (Level ${penaltyLevel})`,
@@ -208,6 +236,23 @@ export async function POST(
             where: { id: contentId }
           })
         }
+
+        await createNotification({
+          userId: contentOwnerId,
+          type: "content_deleted",
+          title: "Konten Dihapus",
+          message: `${contentType === "note" ? "Catatan" : "Flashcard set"} Anda telah dihapus karena melanggar ketentuan.`,
+          link: undefined
+        })
+        // Notify reporters
+        const deletedNotifications = reports.map(report => ({
+          userId: report.userId,
+          type: "report_resolved" as const,
+          title: "Laporan Diselesaikan",
+          message: `Konten yang Anda laporkan telah dihapus. Terima kasih atas laporannya!`,
+          link: undefined
+        }))
+        await createBulkNotifications(deletedNotifications)
 
         return NextResponse.json(
           {

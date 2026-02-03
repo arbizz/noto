@@ -29,6 +29,7 @@ model User {
   flashcardSets  FlashcardSet[]
   reports        Report[]
   likes          Like[]
+  notifications  Notification[]
 
   @@map("users")
 }
@@ -154,6 +155,20 @@ model Report {
   @@map("reports")
 }
 
+model Notification {
+  id          Int              @id @default(autoincrement())
+  userId      Int              @map("user_id")
+  type        NotificationType
+  title       String           @db.VarChar(150)
+  message     String           @db.VarChar(255)
+  link        String?          @db.VarChar(255)
+  isRead      Boolean          @default(false) @map("is_read")
+  createdAt   DateTime         @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP")) @map("created_at")
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
 // Enums
 enum Visibility {
   public
@@ -204,4 +219,11 @@ enum ContentCategory {
   health_medicine
   test_preparation
   other
+}
+
+enum NotificationType {
+  report_reviewed
+  report_resolved
+  content_deleted
+  score_reduced
 }
