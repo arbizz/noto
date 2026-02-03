@@ -100,21 +100,28 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ noteId
     const { title, description, content, visibility, category } = body
 
     if (typeof title !== 'string' || title.trim().length === 0) {
-        return NextResponse.json(
-            { error: "Title is required." },
-            { status: 400 } 
-        )
+      return NextResponse.json(
+        { error: "Title is required." },
+        { status: 400 } 
+      )
+    }
+
+    if (!content || Object.keys(content).length === 0) {
+      return NextResponse.json(
+        { error: "Content is required." },
+        { status: 400 }
+      )
     }
 
     const existingNote = await prisma.note.findUnique({
-        where: { id: noteId, userId }
+      where: { id: noteId, userId }
     })
 
     if (!existingNote) {
-        return NextResponse.json(
-            { error: "Note not found or access denied." },
-            { status: 404 } // Not Found
-        )
+      return NextResponse.json(
+        { error: "Note not found or access denied." },
+        { status: 404 }
+      )
     }
 
     const updatedNote = await prisma.note.update({
@@ -132,7 +139,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ noteId
     })
 
     return NextResponse.json(
-      { message: "Note updated successfully", note: updatedNote },
+      { message: "Note updated successfully", data: updatedNote },
       { status: 200 }
     )
 

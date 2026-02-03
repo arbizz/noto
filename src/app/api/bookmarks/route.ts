@@ -160,8 +160,7 @@ export async function GET(req: NextRequest) {
       .map(b => b.flashcardSet)
       .filter(f => f !== null)
 
-    // Get user's likes
-    const [noteLikes, flashcardLikes] = await Promise.all([
+    const [noteLikes, flashcardLikes, noteReports, flashcardReports] = await Promise.all([
       prisma.like.findMany({
         where: {
           userId,
@@ -177,22 +176,42 @@ export async function GET(req: NextRequest) {
           flashcardSetId: { in: flashcards.map(f => f.id) }
         },
         select: { flashcardSetId: true }
+      }),
+      prisma.report.findMany({
+        where: {
+          userId,
+          contentType: "note",
+          noteId: { in: notes.map(n => n.id) }
+        },
+        select: { noteId: true }
+      }),
+      prisma.report.findMany({
+        where: {
+          userId,
+          contentType: "flashcard",
+          flashcardSetId: { in: flashcards.map(f => f.id) }
+        },
+        select: { flashcardSetId: true }
       })
     ])
 
     const likedNoteIds = new Set(noteLikes.map(l => l.noteId))
     const likedFlashcardIds = new Set(flashcardLikes.map(l => l.flashcardSetId))
+    const reportedNoteIds = new Set(noteReports.map(r => r.noteId))
+    const reportedFlashcardIds = new Set(flashcardReports.map(r => r.flashcardSetId))
 
-    const notesWithLikes = notes.map(note => ({
+    const notesWithFlags = notes.map(note => ({
       ...note,
       isBookmarked: true,
-      isLiked: likedNoteIds.has(note.id)
+      isLiked: likedNoteIds.has(note.id),
+      isReported: reportedNoteIds.has(note.id)
     }))
 
-    const flashcardsWithLikes = flashcards.map(flashcard => ({
+    const flashcardsWithFlags = flashcards.map(flashcard => ({
       ...flashcard,
       isBookmarked: true,
-      isLiked: likedFlashcardIds.has(flashcard.id)
+      isLiked: likedFlashcardIds.has(flashcard.id),
+      isReported: reportedFlashcardIds.has(flashcard.id)
     }))
 
     const totalNPages = Math.ceil(totalNotesCount / limit)
@@ -200,8 +219,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(
       {
-        notes: notesWithLikes,
-        flashcards: flashcardsWithLikes,
+        notes: notesWithFlags,
+        flashcards: flashcardsWithFlags,
         pagination: {
           npagination: {
             totalItems: totalNotesCount,
@@ -261,7 +280,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Check if bookmark exists
     const existingBookmark = await prisma.bookmark.findFirst({
       where: {
         userId,
@@ -274,7 +292,6 @@ export async function POST(req: NextRequest) {
     })
 
     if (existingBookmark) {
-      // Remove bookmark
       await prisma.bookmark.delete({
         where: {
           id: existingBookmark.id
@@ -289,7 +306,6 @@ export async function POST(req: NextRequest) {
         { status: 200 }
       )
     } else {
-      // Get category from content
       let category = null
       
       if (contentType === "note") {
@@ -306,7 +322,6 @@ export async function POST(req: NextRequest) {
         category = flashcard?.category || null
       }
 
-      // Add bookmark
       await prisma.bookmark.create({
         data: {
           userId,

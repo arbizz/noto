@@ -1,29 +1,97 @@
 "use client"
 
-import { Textarea } from "@/components/ui/textarea";
-import { ContentCategory, Visibility } from "@/generated/prisma/enums";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { LucidePlus, LucideTrash } from "lucide-react";
-import { InputMetadata, MetadataConfig } from "@/components/shared/InputMetadata";
+import { useEffect, useState } from "react"
+import { useParams, useRouter } from "next/navigation"
+import { toast } from "sonner"
+
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { InputMetadata, MetadataConfig } from "@/components/shared/InputMetadata"
+
+import { ContentCategory, Visibility } from "@/generated/prisma/enums"
+import { LucidePlus, LucideTrash, LucideArrowLeft } from "lucide-react"
 
 interface Flashcard {
   front: string
   back: string
 }
 
-export default function NewFlashcardPage() {
-  const router = useRouter()
+interface InitialState {
+  title: string
+  description: string
+  category: ContentCategory
+  visibility: Visibility
+  flashcards: Flashcard[]
+}
 
-  const [flashcards, setFlashcards] = useState<Flashcard[]>([
-    { front: "", back: "" }
-  ])
+export default function FlashcardUpdatePage() {
+  const router = useRouter()
+  const { flashcardId } = useParams()
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [category, setCategory] = useState<ContentCategory>("other")
   const [visibility, setVisibility] = useState<Visibility>("private")
+  const [flashcards, setFlashcards] = useState<Flashcard[]>([])
+
+  const [initialState, setInitialState] = useState<InitialState | null>(null)
+  const [dirty, setDirty] = useState(false)
+
+  useEffect(() => {
+    async function fetchData() {
+      setIsLoading(true)
+
+      try {
+        const res = await fetch(`/api/flashcards/${flashcardId}`)
+
+        if (!res.ok) {
+          toast.error("Failed to load flashcard set")
+          return
+        }
+
+        const { data } = await res.json()
+
+        setTitle(data.title)
+        setDescription(data.description ?? "")
+        setCategory(data.category)
+        setVisibility(data.visibility)
+        setFlashcards(data.flashcards)
+
+        setInitialState({
+          title: data.title,
+          description: data.description ?? "",
+          category: data.category,
+          visibility: data.visibility,
+          flashcards: structuredClone(data.flashcards),
+        })
+      } catch (error) {
+        console.error("Error fetching flashcard data:", error)
+        toast.error("Failed to load flashcard set")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [flashcardId])
+
+  useEffect(() => {
+    if (!initialState) {
+      setDirty(false)
+      return
+    }
+
+    const isDirty =
+      title !== initialState.title ||
+      description !== initialState.description ||
+      category !== initialState.category ||
+      visibility !== initialState.visibility ||
+      JSON.stringify(flashcards) !== JSON.stringify(initialState.flashcards)
+
+    setDirty(isDirty)
+  }, [title, description, category, visibility, flashcards, initialState])
 
   function handleUpdateFCard(e: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, i: number, f: "front" | "back", v: string) {
     e.preventDefault()
@@ -54,27 +122,43 @@ export default function NewFlashcardPage() {
     })
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLButtonElement>) {
-    const res = await fetch("/api/flashcards", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        title,
-        description,
-        flashcards,
-        category,
-        visibility
+  function handleCancel() {
+    router.push(`/flashcards/${flashcardId}`)
+  }
+
+  async function handleSave() {
+    if (!dirty) return
+
+    setIsSaving(true)
+
+    try {
+      const res = await fetch(`/api/flashcards/${flashcardId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          category,
+          visibility,
+          flashcards,
+        }),
       })
-    })
 
-    const {id} = await res.json()
+      if (!res.ok) {
+        const error = await res.json()
+        toast.error(error.error ?? "Failed to save flashcard set")
+        return
+      }
 
-    if (id) {
-      toast.success("Created")  
-
-      router.push(`/flashcards/${id}`)
+      toast.success("Flashcard set saved successfully")
+      router.push(`/flashcards/${flashcardId}`)
+    } catch (error) {
+      console.error("Error saving flashcard:", error)
+      toast.error("Failed to save flashcard set")
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -82,28 +166,46 @@ export default function NewFlashcardPage() {
     {
       type: "title",
       value: title,
-      onChange: setTitle
+      onChange: setTitle,
     },
     {
       type: "description",
       value: description,
-      onChange: setDescription
+      onChange: setDescription,
     },
     {
       type: "category",
       value: category,
-      onChange: setCategory
+      onChange: setCategory,
     },
     {
       type: "visibility",
       value: visibility,
-      onChange: setVisibility
-    }
+      onChange: setVisibility,
+    },
   ]
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <p className="text-muted-foreground">Loading flashcard set...</p>
+      </div>
+    )
+  }
 
   return (
     <>
       <section className="space-y-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleCancel}
+          className="mb-4"
+        >
+          <LucideArrowLeft className="w-4 h-4 mr-2" />
+          Back to View
+        </Button>
+
         <InputMetadata metadatas={metadatas} />
       </section>
 
@@ -175,7 +277,16 @@ export default function NewFlashcardPage() {
           <LucidePlus className="w-5 h-5" />
           Add Card
         </Button>
-        <Button onClick={(e) => handleSubmit(e)} className="w-full">Save</Button>
+
+        <div className="flex items-center gap-3 w-full">
+          <Button onClick={handleSave} disabled={!dirty || isSaving} className="flex-1">
+            {isSaving ? "Saving..." : "Save Changes"}
+          </Button>
+
+          <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
+            Cancel
+          </Button>
+        </div>
       </section>
     </>
   )

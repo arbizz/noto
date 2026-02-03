@@ -14,6 +14,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ flashca
 
     const userId = Number(session.user.id)
     const flashcardId = Number(id)
+    
+    if (isNaN(flashcardId)) return NextResponse.json(
+      { error: "Invalid Flashcard ID" },
+      { status: 400 }
+    )
 
     const flashcardSet = await prisma.flashcardSet.findUnique({
       where: {
@@ -31,12 +36,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ flashca
     })
 
     if (!flashcardSet) return NextResponse.json(
-      { error: "Not found" },
+      { error: "Flashcard set not found or access denied." },
       { status: 404 }
     )
 
     return NextResponse.json(
-      { message: "success", data: flashcardSet },
+      { data: flashcardSet },
       { status: 200 }
     )
   } catch (err) {
@@ -48,12 +53,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ flashca
   }
 }
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { flashcardId: string } }
-) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ flashcardId: string }> }) {
   try {
+    const { flashcardId: id } = await params
     const session = await auth()
+    
     if (!session?.user) {
       return NextResponse.json(
         { error: "Unauthorized" },
@@ -62,32 +66,40 @@ export async function PATCH(
     }
 
     const userId = Number(session.user.id)
-    const flashcardId = Number(params.flashcardId)
+    const flashcardId = Number(id)
 
     if (isNaN(flashcardId)) {
       return NextResponse.json(
-        { error: "Invalid flashcard ID" },
+        { error: "Invalid Flashcard ID" },
         { status: 400 }
       )
     }
 
     const body = await req.json()
-    const {
-      title,
-      description,
-      category,
-      visibility,
-      flashcards,
-    } = body
+    const { title, description, category, visibility, flashcards } = body
 
-    if (
-      (title !== undefined && typeof title !== "string") ||
-      (description !== undefined && typeof description !== "string") ||
-      (flashcards !== undefined && !Array.isArray(flashcards))
-    ) {
+    if (typeof title !== 'string' || title.trim().length === 0) {
       return NextResponse.json(
-        { error: "Invalid payload" },
+        { error: "Title is required." },
         { status: 400 }
+      )
+    }
+
+    if (!Array.isArray(flashcards) || flashcards.length === 0) {
+      return NextResponse.json(
+        { error: "Flashcards are required and must not be empty." },
+        { status: 400 }
+      )
+    }
+
+    const existingFlashcard = await prisma.flashcardSet.findUnique({
+      where: { id: flashcardId, userId }
+    })
+
+    if (!existingFlashcard) {
+      return NextResponse.json(
+        { error: "Flashcard set not found or access denied." },
+        { status: 404 }
       )
     }
 
@@ -97,38 +109,32 @@ export async function PATCH(
         userId,
       },
       data: {
-        ...(title !== undefined && { title }),
-        ...(description !== undefined && { description }),
-        ...(category !== undefined && { category }),
-        ...(visibility !== undefined && { visibility }),
-        ...(flashcards !== undefined && { flashcards }),
+        title,
+        description,
+        category,
+        visibility,
+        flashcards,
       },
     })
 
     return NextResponse.json(
-      { message: "Updated successfully", data: updated },
+      { message: "Flashcard set updated successfully", data: updated },
       { status: 200 }
     )
-  } catch (err: any) {
-    if (err.code === "P2025") {
-      return NextResponse.json(
-        { error: "Flashcard not found" },
-        { status: 404 }
-      )
-    }
-
+  } catch (err) {
     console.error(err)
     return NextResponse.json(
-      { error: "Server error" },
+      { error: "Server error during update" },
       { status: 500 }
     )
   }
 }
 
-
-export async function DELETE(_req: Request, { params }: { params: { flashcardId: string } }) {
+export async function DELETE(_req: Request, { params }: { params: Promise<{ flashcardId: string }> }) {
   try {
+    const { flashcardId: id } = await params
     const session = await auth()
+    
     if (!session?.user) {
       return NextResponse.json(
         { error: "Unauthorized" },
@@ -137,7 +143,7 @@ export async function DELETE(_req: Request, { params }: { params: { flashcardId:
     }
 
     const userId = Number(session.user.id)
-    const flashcardId = Number(params.flashcardId)
+    const flashcardId = Number(id)
 
     await prisma.flashcardSet.delete({
       where: {
@@ -147,7 +153,7 @@ export async function DELETE(_req: Request, { params }: { params: { flashcardId:
     })
 
     return NextResponse.json(
-      { message: "Nice" },
+      { message: "Success" },
       { status: 200 }
     )
   } catch (err) {

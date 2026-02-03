@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
       { error: "Unauthorized" },
       { status: 401 }
     )
-  
+
     const userId = Number(session.user.id)
     const searchParams = req.nextUrl.searchParams
 
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    const totalNotesCount = await prisma.note.count({
+    const totalFlashcardsCount = await prisma.flashcardSet.count({
       where: {
         userId,
         ...(category && { category }),
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
       }
     })
 
-    const notes = await prisma.note.findMany({
+    const flashcards = await prisma.flashcardSet.findMany({
       where: {
         userId,
         ...(category && { category }),
@@ -80,21 +80,21 @@ export async function GET(req: NextRequest) {
       take: limit
     })
 
-    const notesWithFlags = notes.map(note => ({
-      ...note,
+    const flashcardsWithFlags = flashcards.map(flashcard => ({
+      ...flashcard,
       isBookmarked: false,
       isLiked: false,
       isReported: false
     }))
 
-    const totalPages = Math.ceil(totalNotesCount / limit)
+    const totalPages = Math.ceil(totalFlashcardsCount / limit)
 
     return NextResponse.json(
-      {
+      { 
         message: "nice",
-        notes: notesWithFlags,
+        flashcards: flashcardsWithFlags,
         pagination: {
-          totalItems: totalNotesCount,
+          totalItems: totalFlashcardsCount,
           totalPages: totalPages,
           currentPage: page,
           pageSize: limit,
@@ -105,9 +105,12 @@ export async function GET(req: NextRequest) {
       { status: 200 }
     )
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 })
-  }   
+    console.error(err)
+    return NextResponse.json(
+      { error: "Server error" },
+      { status: 500 }
+    )
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -121,54 +124,56 @@ export async function POST(req: NextRequest) {
     const userId = Number(session.user.id)
 
     const body = await req.json()
-    const { title, description, content, visibility, category } = body
+    const { title, description, flashcards, visibility, category } = body
 
-    if (!title || Object.keys(content).length === 0 ) return NextResponse.json(
-      { message: "" },
-      { status: 400 },
-    )
+    if (!title || !Array.isArray(flashcards) || flashcards.length === 0) {
+      return NextResponse.json(
+        { error: "Title and flashcards are required." },
+        { status: 400 },
+      )
+    }
 
     if (category === "") {
-      const { id } = await prisma.note.create({
+      const { id } = await prisma.flashcardSet.create({
         data: {
           userId,
           title,
           description,
-          content,
+          flashcards,
           visibility,
-          category: "other",
+          category: "other"
         },
         select: {
-          id: true,
+          id: true
         }
       })
 
       return NextResponse.json(
-        { message: "Note Created", id: id },
+        { message: "Set Created", id: id },
         { status: 201 }
       )
     }
-
-    const { id } = await prisma.note.create({
+    
+    const { id } = await prisma.flashcardSet.create({
       data: {
         userId,
         title,
         description,
-        content,
+        flashcards,
         visibility,
-        category,
+        category
       },
       select: {
-        id: true,
+        id: true
       }
     })
-
+    
     return NextResponse.json(
-      { message: "Note Created", id: id },
+      { message: "Set Created", id: id },
       { status: 201 }
     )
   } catch (err) {
-    console.error(err);
+    console.error(err)
     return NextResponse.json(
       { error: "Server error" },
       { status: 500 }

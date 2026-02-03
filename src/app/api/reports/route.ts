@@ -224,3 +224,85 @@ export async function GET(req: NextRequest) {
     )
   }
 }
+
+export async function POST(req: NextRequest) {
+  try {
+    const session = await auth()
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      )
+    }
+
+    const userId = Number(session.user.id)
+    const body = await req.json()
+
+    const { contentId, contentType, reason, description } = body
+
+    if (!contentId || !contentType || !reason) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      )
+    }
+
+    if (contentType !== "note" && contentType !== "flashcard") {
+      return NextResponse.json(
+        { error: "Invalid content type" },
+        { status: 400 }
+      )
+    }
+
+    // Check if report already exists
+    const existingReport = await prisma.report.findFirst({
+      where: {
+        userId,
+        contentType,
+        ...(contentType === "note"
+          ? { noteId: Number(contentId) }
+          : { flashcardSetId: Number(contentId) }
+        )
+      }
+    })
+
+    if (existingReport) {
+      return NextResponse.json(
+        { 
+          error: "You have already reported this content",
+          isReported: true 
+        },
+        { status: 400 }
+      )
+    }
+
+    // Create new report
+    await prisma.report.create({
+      data: {
+        userId,
+        contentType,
+        reason,
+        description: description || null,
+        status: "pending",
+        ...(contentType === "note"
+          ? { noteId: Number(contentId) }
+          : { flashcardSetId: Number(contentId) }
+        )
+      }
+    })
+
+    return NextResponse.json(
+      { 
+        message: "Content reported successfully",
+        isReported: true 
+      },
+      { status: 200 }
+    )
+  } catch (err) {
+    console.error("Report error:", err)
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    )
+  }
+}

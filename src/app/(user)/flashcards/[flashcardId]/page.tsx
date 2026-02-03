@@ -6,40 +6,26 @@ import { toast } from "sonner"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { InputMetadata, MetadataConfig } from "@/components/shared/InputMetadata"
 
 import { cn } from "@/lib/utils"
 import { ContentCategory, Visibility } from "@/generated/prisma/enums"
+import { LucideEdit, LucideTrash, LucideRepeat } from "lucide-react"
 
 interface Flashcard {
   front: string
   back: string
 }
 
-interface InitialState {
-  title: string
-  description: string
-  category: ContentCategory
-  visibility: Visibility
-  flashcards: Flashcard[]
-}
-
-export default function FlashcardPage() {
+export default function FlashcardViewPage() {
   const router = useRouter()
   const { flashcardId } = useParams()
   const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
 
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [category, setCategory] = useState<ContentCategory>("other")
   const [visibility, setVisibility] = useState<Visibility>("private")
   const [flashcards, setFlashcards] = useState<Flashcard[]>([])
-
-  const [initialState, setInitialState] = useState<InitialState | null>(null)
-  const [dirty, setDirty] = useState(false)
-  const [renderKey, setRenderKey] = useState(0)
 
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
@@ -59,18 +45,10 @@ export default function FlashcardPage() {
         const { data } = await res.json()
 
         setTitle(data.title)
-        setDescription(data.description ?? "")
+        setDescription(data.description)
         setCategory(data.category)
         setVisibility(data.visibility)
         setFlashcards(data.flashcards)
-
-        setInitialState({
-          title: data.title,
-          description: data.description ?? "",
-          category: data.category,
-          visibility: data.visibility,
-          flashcards: structuredClone(data.flashcards),
-        })
       } catch (error) {
         console.error("Error fetching flashcard data:", error)
         toast.error("Failed to load flashcard set")
@@ -82,37 +60,9 @@ export default function FlashcardPage() {
     fetchData()
   }, [flashcardId])
 
-  useEffect(() => {
-    if (!initialState) {
-      setDirty(false)
-      return
-    }
-
-    const isDirty =
-      title !== initialState.title ||
-      description !== initialState.description ||
-      category !== initialState.category ||
-      visibility !== initialState.visibility ||
-      JSON.stringify(flashcards) !== JSON.stringify(initialState.flashcards)
-
-    setDirty(isDirty)
-  }, [title, description, category, visibility, flashcards, initialState])
-
-  useEffect(() => {
-    if (currentIndex >= flashcards.length && flashcards.length > 0) {
-      setCurrentIndex(flashcards.length - 1)
-    }
-  }, [flashcards.length, currentIndex])
-
-  function updateCard(index: number, field: "front" | "back", value: string) {
-    setFlashcards((prev) =>
-      prev.map((card, i) => (i === index ? { ...card, [field]: value } : card))
-    )
-  }
-
   function nextCard() {
     setIsFlipped(false)
-    setCurrentIndex((i) => Math.min(i + 1, flashcards.length - 1))
+    setCurrentIndex((i) => Math.min(i + 1, (flashcards.length || 1) - 1))
   }
 
   function prevCard() {
@@ -120,66 +70,11 @@ export default function FlashcardPage() {
     setCurrentIndex((i) => Math.max(i - 1, 0))
   }
 
-  function handleCancel() {
-    if (!initialState) return
-
-    setTitle(initialState.title)
-    setDescription(initialState.description)
-    setCategory(initialState.category)
-    setVisibility(initialState.visibility)
-    setFlashcards(structuredClone(initialState.flashcards))
-    setRenderKey((k) => k + 1)
-    setIsFlipped(false)
-  }
-
-  async function handleSave() {
-    if (!dirty) return
-
-    setIsSaving(true)
-
-    try {
-      const res = await fetch(`/api/flashcards/${flashcardId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title,
-          description,
-          category,
-          visibility,
-          flashcards,
-        }),
-      })
-
-      if (!res.ok) {
-        const error = await res.json()
-        toast.error(error.error ?? "Failed to save changes")
-        return
-      }
-
-      const { data } = await res.json()
-
-      setInitialState({
-        title: data.title,
-        description: data.description ?? "",
-        category: data.category,
-        visibility: data.visibility,
-        flashcards: structuredClone(data.flashcards),
-      })
-
-      setDirty(false)
-      toast.success("Changes saved successfully")
-    } catch (error) {
-      console.error("Error saving flashcard:", error)
-      toast.error("Failed to save changes")
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
   async function handleDelete() {
     if (!flashcardId) return
+
+    const confirmed = confirm("Are you sure you want to delete this flashcard set?")
+    if (!confirmed) return
 
     try {
       const res = await fetch(`/api/flashcards/${flashcardId}`, {
@@ -199,29 +94,6 @@ export default function FlashcardPage() {
     }
   }
 
-  const metadatas: MetadataConfig[] = [
-    {
-      type: "title",
-      value: title,
-      onChange: setTitle,
-    },
-    {
-      type: "description",
-      value: description,
-      onChange: setDescription,
-    },
-    {
-      type: "category",
-      value: category,
-      onChange: setCategory,
-    },
-    {
-      type: "visibility",
-      value: visibility,
-      onChange: setVisibility,
-    },
-  ]
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -231,52 +103,69 @@ export default function FlashcardPage() {
   }
 
   const currentCard = flashcards[currentIndex]
-  if (!currentCard) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <p className="text-muted-foreground">No flashcards available</p>
-      </div>
-    )
-  }
 
   return (
     <>
       <section className="space-y-4">
-        <InputMetadata metadatas={metadatas} />
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 space-y-2">
+            <h1 className="text-3xl font-bold">{title}</h1>
+            {description && (
+              <p className="text-muted-foreground">{description}</p>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => router.push(`/flashcards/${flashcardId}/edit`)}>
+              <LucideEdit className="w-4 h-4 mr-2" />
+              Edit
+            </Button>
+            <Button variant="destructive" size="sm" onClick={handleDelete}>
+              <LucideTrash className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="px-2 py-1 bg-muted rounded-md capitalize">
+            {category.replace(/_/g, " ")}
+          </span>
+          <span className="px-2 py-1 bg-muted rounded-md capitalize">
+            {visibility}
+          </span>
+        </div>
       </section>
 
       <section className="mt-10 flex flex-col items-center gap-6">
-        <div
-          className="w-[320px] h-52 perspective"
+        <div 
+          className="w-full max-w-2xl h-80 cursor-pointer"
           onClick={() => setIsFlipped(!isFlipped)}
         >
-          <Card
+          <Card 
             className={cn(
-              "relative h-full w-full cursor-pointer transition-transform duration-500",
-              "transform-style-preserve-3d",
-              isFlipped && "rotate-y-180"
+              "h-full w-full flex items-center justify-center transition-colors duration-200 hover:bg-muted/30 border-2",
+              isFlipped ? "border-primary/50 bg-muted/10" : "border-border"
             )}
           >
-            <CardContent className="absolute inset-0 backface-hidden flex items-center justify-center">
-              <Textarea
-                value={currentCard.front}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) =>
-                  updateCard(currentIndex, "front", e.target.value)
-                }
-                placeholder="Front of card"
-              />
-            </CardContent>
+            <CardContent className="text-center p-8 w-full">
+              <div className="flex flex-col items-center gap-4">
+                <span className={cn(
+                  "px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider",
+                  isFlipped 
+                    ? "bg-primary/10 text-primary" 
+                    : "bg-muted text-muted-foreground"
+                )}>
+                  {isFlipped ? "Answer / Back" : "Question / Front"}
+                </span>
 
-            <CardContent className="absolute inset-0 backface-hidden rotate-y-180 flex items-center justify-center">
-              <Textarea
-                value={currentCard.back}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) =>
-                  updateCard(currentIndex, "back", e.target.value)
-                }
-                placeholder="Back of card"
-              />
+                <p className="text-2xl font-medium whitespace-pre-wrap animate-in fade-in zoom-in-95 duration-200 key={isFlipped ? 'back' : 'front'}">
+                  {isFlipped ? currentCard.back : currentCard.front}
+                </p>
+
+                <p className="text-xs text-muted-foreground mt-4 flex items-center gap-1 opacity-70">
+                  <LucideRepeat className="w-3 h-3" />
+                  Click card to {isFlipped ? "see question" : "reveal answer"}
+                </p>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -286,6 +175,7 @@ export default function FlashcardPage() {
             variant="outline"
             onClick={prevCard}
             disabled={currentIndex === 0}
+            size="lg"
           >
             Previous
           </Button>
@@ -293,28 +183,15 @@ export default function FlashcardPage() {
             variant="outline"
             onClick={nextCard}
             disabled={currentIndex === flashcards.length - 1}
+            size="lg"
           >
             Next
           </Button>
         </div>
 
-        <p className="text-sm text-muted-foreground">
+        <p className="text-lg font-semibold">
           {currentIndex + 1} / {flashcards.length}
         </p>
-
-        <div className="flex items-center gap-3">
-          <Button onClick={handleSave} disabled={!dirty || isSaving}>
-            {isSaving ? "Saving..." : "Save Changes"}
-          </Button>
-
-          <Button variant="outline" onClick={handleCancel} disabled={!dirty}>
-            Cancel
-          </Button>
-
-          <Button variant="destructive" onClick={handleDelete}>
-            Delete
-          </Button>
-        </div>
       </section>
     </>
   )

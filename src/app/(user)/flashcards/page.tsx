@@ -1,11 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
 import { LucidePlus } from "lucide-react"
-
-import { FlashcardSet } from "@/generated/prisma/client"
+import { useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { NFCard } from "@/components/user/NFCard"
@@ -13,21 +11,8 @@ import { PagePagination } from "@/components/shared/PagePagination"
 import { FilterConfig, InputFilter } from "@/components/shared/InputFilter"
 
 import { PaginationMeta } from "@/types/shared/pagination"
+import { FlashcardSetWithExtras } from "@/types/shared/nf_extras"
 import { CategoryFilter, VisibilityFilter } from "@/types/shared/filter"
-
-type FlashcardSetWithExtras = FlashcardSet & {
-  user?: {
-    id: number
-    name: string
-    image: string | null
-  }
-  _count?: {
-    likes: number
-  }
-  isBookmarked?: boolean
-  isLiked?: boolean
-  isReported?: boolean
-}
 
 export default function FlashcardsPage() {
   const router = useRouter()

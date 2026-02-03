@@ -99,7 +99,6 @@ export async function GET(req: NextRequest) {
       })
     ])
 
-    // Get user's bookmarks, likes, and reports
     const [noteBookmarks, flashcardBookmarks, noteLikes, flashcardLikes, noteReports, flashcardReports] = await Promise.all([
       prisma.bookmark.findMany({
         where: {

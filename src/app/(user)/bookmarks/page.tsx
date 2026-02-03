@@ -1,55 +1,19 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { FlashcardSet, Note } from "@/generated/prisma/client"
-import { ContentCategory, ReportReason } from "@/generated/prisma/enums"
-import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { ContentCategory, ReportReason } from "@/generated/prisma/enums"
+
+import { toast } from "sonner"
 import { NFCard } from "@/components/user/NFCard"
 import { ReportDialog } from "@/components/user/ReportDialog"
-import { toast } from "sonner"
-import { FilterConfig, InputFilter } from "@/components/shared/InputFilter"
 import { PagePagination } from "@/components/shared/PagePagination"
+import { FilterConfig, InputFilter } from "@/components/shared/InputFilter"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-type CategoryFilter = ContentCategory | "all"
-
-type PaginationMeta = {
-  totalItems: number
-  totalPages: number
-  currentPage: number
-  pageSize: number
-  hasNextPage: boolean
-  hasPreviousPage: boolean
-}
-
-type NoteWithUser = Note & {
-  user: {
-    id: number
-    name: string
-    image: string | null
-  }
-  _count: {
-    likes: number
-  }
-  isBookmarked: boolean
-  isLiked: boolean
-  isReported: boolean
-}
-
-type FlashcardSetWithUser = FlashcardSet & {
-  user: {
-    id: number
-    name: string
-    image: string | null
-  }
-  _count: {
-    likes: number
-  }
-  isBookmarked: boolean
-  isLiked: boolean
-  isReported: boolean
-}
+import { CategoryFilter } from "@/types/shared/filter"
+import { PaginationMeta } from "@/types/shared/pagination"
+import { NoteWithExtras, FlashcardSetWithExtras } from "@/types/shared/nf_extras"
 
 type ReportDialogState = {
   open: boolean
@@ -62,8 +26,8 @@ export default function BookmarksPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const [notes, setNotes] = useState<NoteWithUser[]>([])
-  const [flashcards, setFlashcards] = useState<FlashcardSetWithUser[]>([])
+  const [notes, setNotes] = useState<NoteWithExtras[]>([])
+  const [flashcards, setFlashcards] = useState<FlashcardSetWithExtras[]>([])
   const [fpagination, setFPagination] = useState<PaginationMeta | null>(null)
   const [npagination, setNPagination] = useState<PaginationMeta | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -230,7 +194,9 @@ export default function BookmarksPage() {
     e.stopPropagation()
 
     if (isReported) {
-      handleSubmitReport(contentId, contentType, ReportReason.spam)
+      toast.info("Already reported", {
+        description: "You have already reported this content"
+      })
       return
     }
 
@@ -262,17 +228,23 @@ export default function BookmarksPage() {
         })
       })
 
-      if (!res.ok) {
-        throw new Error("Failed to toggle report")
-      }
-
       const data = await res.json()
+
+      if (!res.ok) {
+        if (res.status === 400 && data.isReported) {
+          toast.info("Already reported", {
+            description: data.error
+          })
+          return
+        }
+        throw new Error(data.error || "Failed to submit report")
+      }
 
       if (contentType === "note") {
         setNotes(prev =>
           prev.map(note =>
             note.id === contentId
-              ? { ...note, isReported: data.isReported }
+              ? { ...note, isReported: true }
               : note
           )
         )
@@ -280,19 +252,18 @@ export default function BookmarksPage() {
         setFlashcards(prev =>
           prev.map(flashcard =>
             flashcard.id === contentId
-              ? { ...flashcard, isReported: data.isReported }
+              ? { ...flashcard, isReported: true }
               : flashcard
           )
         )
       }
 
-      const notif = data.isReported ? "Content reported" : "Report removed"
-      toast(notif, {
+      toast.success("Content reported", {
         description: data.message
       })
     } catch (error) {
-      console.error("Error toggling report:", error)
-      toast.error("Error toggling report")
+      console.error("Error submitting report:", error)
+      toast.error(error instanceof Error ? error.message : "Error submitting report")
     }
   }
 
@@ -316,8 +287,8 @@ export default function BookmarksPage() {
           flashcards,
           pagination,
         }: {
-          notes: NoteWithUser[]
-          flashcards: FlashcardSetWithUser[]
+          notes: NoteWithExtras[]
+          flashcards: FlashcardSetWithExtras[]
           pagination: {
             npagination: PaginationMeta
             fpagination: PaginationMeta
@@ -494,7 +465,6 @@ export default function BookmarksPage() {
         )}
       </section>
 
-      {/* Report Dialog */}
       <ReportDialog
         open={reportDialog.open}
         onOpenChange={(open: boolean) => setReportDialog(prev => ({ ...prev, open }))}

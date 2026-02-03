@@ -108,17 +108,29 @@ function NFCard({
                   </DropdownMenuItem>
                 )}
 
-                {onReport && (
+                {onReport && !isReported && (
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem 
                       onClick={onReport} 
-                      className={`gap-2 cursor-pointer ${isReported ? "text-orange-600 dark:text-orange-500" : "text-red-600 dark:text-red-500"}`}
+                      className="gap-2 cursor-pointer text-red-600 dark:text-red-500"
                     >
-                      <LucideFlag 
-                        className={`h-4 w-4 ${isReported ? "fill-current" : ""}`} 
-                      />
-                      <span>{isReported ? "Unreport" : "Report"}</span>
+                      <LucideFlag className="h-4 w-4" />
+                      <span>Report</span>
+                    </DropdownMenuItem>
+                  </>
+                )}
+
+                {onReport && isReported && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={onReport} 
+                      disabled
+                      className="gap-2 cursor-not-allowed text-orange-600 dark:text-orange-500 opacity-60"
+                    >
+                      <LucideFlag className="h-4 w-4 fill-current" />
+                      <span>Reported</span>
                     </DropdownMenuItem>
                   </>
                 )}
@@ -158,28 +170,6 @@ function NFCard({
             </Tooltip>
           )          
         }
-
-        {/* {showLikeOnly ? (
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <LucideHeart className="h-4 w-4" />
-            <span className="text-xs font-medium">{likesCount}</span>
-          </div>
-        ) : (
-          content.visibility === "public" && onLike && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="icon" variant="ghost" onClick={onLike}>
-                  <LucideHeart 
-                    className={`h-4 w-4 ${isLiked ? "fill-red-500 text-red-500" : ""}`} 
-                  />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <span className="text-xs font-medium">{likesCount}</span>
-              </TooltipContent>
-            </Tooltip>
-          )
-        )} */}
       </CardFooter>
     </Card>
   )

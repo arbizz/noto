@@ -3,7 +3,6 @@ import StarterKit from "@tiptap/starter-kit"
 import { Schema } from "@tiptap/pm/model"
 import { getSchema } from "@tiptap/core"
 
-
 const tiptapExtensions = [
   StarterKit
 ]
