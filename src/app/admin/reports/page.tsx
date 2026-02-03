@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button"
 import { ReportReason, ReportStatus } from "@/generated/prisma/enums"
 import { FilterConfig, InputFilter } from "@/components/shared/InputFilter"
 import { PagePagination } from "@/components/shared/PagePagination"
+import { PaginationMeta } from "@/types/shared/pagination"
 
 type GroupedReport = {
   contentId: number
@@ -54,15 +55,6 @@ type GroupedReport = {
 
 type StatusFilter = ReportStatus | "all"
 type ReasonFilter = ReportReason | "all"
-
-type PaginationMeta = {
-  totalItems: number
-  totalPages: number
-  currentPage: number
-  pageSize: number
-  hasNextPage: boolean
-  hasPreviousPage: boolean
-}
 
 export default function AdminReportsPage() {
   const router = useRouter()

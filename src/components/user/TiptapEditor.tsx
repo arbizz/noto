@@ -14,7 +14,7 @@ function TiptapEditor({
 }: {
   content: JSONContent,
   onChange: (value: JSONContent) => void,
-  className: string,
+  className?: string,
   readonly?: boolean
 }) {
   const editor = useEditor({

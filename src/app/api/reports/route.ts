@@ -57,7 +57,6 @@ export async function GET(req: NextRequest) {
       ...(reason && { reason })
     }
 
-    // Fetch all reports with filters
     const allReports = await prisma.report.findMany({
       where,
       include: {
@@ -109,7 +108,6 @@ export async function GET(req: NextRequest) {
       }
     })
 
-    // Group reports by content
     const groupedMap = new Map<string, any>()
 
     for (const report of allReports) {
@@ -135,7 +133,6 @@ export async function GET(req: NextRequest) {
 
       const group = groupedMap.get(contentKey)!
       
-      // Add report to group
       group.reports.push({
         id: report.id,
         userId: report.userId,
@@ -149,17 +146,14 @@ export async function GET(req: NextRequest) {
       group.totalReports++
       group.statuses.add(report.status)
       
-      // Count reasons
       const currentCount = group.reasons.get(report.reason) || 0
       group.reasons.set(report.reason, currentCount + 1)
       
-      // Update latest report date
       if (new Date(report.createdAt) > new Date(group.latestReportDate)) {
         group.latestReportDate = report.createdAt
       }
     }
 
-    // Convert to array and format
     const groupedReports = Array.from(groupedMap.values()).map(group => ({
       contentId: group.contentId,
       contentType: group.contentType,
@@ -180,7 +174,6 @@ export async function GET(req: NextRequest) {
         status: r.status,
         createdAt: r.createdAt
       })),
-      // Determine overall status priority: pending > reviewed > resolved/rejected
       primaryStatus: group.statuses.has("pending" as ReportStatus) 
         ? "pending" 
         : group.statuses.has("reviewed" as ReportStatus)
@@ -190,14 +183,12 @@ export async function GET(req: NextRequest) {
         : "rejected"
     }))
 
-    // Sort by latest report date
     groupedReports.sort((a, b) => {
       const dateA = new Date(a.latestReportDate).getTime()
       const dateB = new Date(b.latestReportDate).getTime()
       return order === "desc" ? dateB - dateA : dateA - dateB
     })
 
-    // Pagination
     const totalItems = groupedReports.length
     const totalPages = Math.ceil(totalItems / limit)
     const paginatedReports = groupedReports.slice(skip, skip + limit)
@@ -254,7 +245,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Check if report already exists
     const existingReport = await prisma.report.findFirst({
       where: {
         userId,
@@ -276,7 +266,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Create new report
     await prisma.report.create({
       data: {
         userId,

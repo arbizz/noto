@@ -24,9 +24,6 @@ function UserSidebar() {
             >
               <Image src="/placeholder.svg" alt="Noto logo" width={24} height={24} />
             </Link>
-            <div className="absolute top-3 left-14">
-              <NotificationBell />
-            </div>
             <Button
               variant="ghost"
               size="icon"

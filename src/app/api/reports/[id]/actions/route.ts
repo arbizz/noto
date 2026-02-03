@@ -8,9 +8,9 @@ type ActionType = "set_reviewed" | "delete_content" | "reduce_score"
 type PenaltyLevel = 1 | 2 | 3
 
 const PENALTY_AMOUNTS = {
-  1: 10,  // Minor violation
-  2: 15,  // Moderate violation
-  3: 25   // Severe violation
+  1: 10,
+  2: 15,
+  3: 25
 } as const
 
 export async function POST(
@@ -26,7 +26,6 @@ export async function POST(
       )
     }
 
-    // Check if user is admin
     const admin = await prisma.user.findUnique({
       where: { id: Number(session.user.id) },
       select: { role: true }
@@ -39,7 +38,6 @@ export async function POST(
       )
     }
 
-    // Parse ID format: "note-123" or "flashcard-456"
     const [contentType, contentIdStr] = params.id.split("-")
     const contentId = Number(contentIdStr)
 
@@ -56,7 +54,6 @@ export async function POST(
       penaltyLevel?: PenaltyLevel
     }
 
-    // Get all reports for this content
     const reports = await prisma.report.findMany({
       where: contentType === "note"
         ? { noteId: contentId, contentType: "note" }
@@ -70,7 +67,6 @@ export async function POST(
       )
     }
 
-    // Get content to find owner
     let contentOwnerId: number | null = null
     if (contentType === "note") {
       const note = await prisma.note.findUnique({
@@ -95,7 +91,6 @@ export async function POST(
 
     switch (action) {
       case "set_reviewed":
-        // Update all reports for this content to "reviewed"
         await prisma.report.updateMany({
           where: contentType === "note"
             ? { noteId: contentId, contentType: "note" }
@@ -124,7 +119,6 @@ export async function POST(
         )
 
       case "reduce_score":
-        // Validate penalty level
         if (!penaltyLevel || ![1, 2, 3].includes(penaltyLevel)) {
           return NextResponse.json(
             { error: "Valid penalty level (1, 2, or 3) is required" },
@@ -134,7 +128,6 @@ export async function POST(
 
         const penaltyAmount = PENALTY_AMOUNTS[penaltyLevel]
 
-        // Get current user data
         const contentOwner = await prisma.user.findUnique({
           where: { id: contentOwnerId },
           select: { score: true, status: true }
@@ -149,7 +142,6 @@ export async function POST(
 
         const newScore = Math.max(0, contentOwner.score - penaltyAmount)
         
-        // Determine new status based on score
         let newStatus: UserStatus = "active"
         if (newScore <= 15) {
           newStatus = "banned"
@@ -157,7 +149,6 @@ export async function POST(
           newStatus = "suspended"
         }
 
-        // Update user score and status
         const updatedUser = await prisma.user.update({
           where: { id: contentOwnerId },
           data: {
@@ -173,7 +164,6 @@ export async function POST(
           }
         })
 
-        // Mark all reports as resolved
         await prisma.report.updateMany({
           where: contentType === "note"
             ? { noteId: contentId, contentType: "note" }
@@ -216,7 +206,6 @@ export async function POST(
         )
 
       case "delete_content":
-        // Update all reports first, then delete content
         await prisma.report.updateMany({
           where: contentType === "note"
             ? { noteId: contentId, contentType: "note" }
@@ -226,7 +215,6 @@ export async function POST(
           }
         })
         
-        // Delete the content (cascades will handle related data)
         if (contentType === "note") {
           await prisma.note.delete({
             where: { id: contentId }

@@ -30,6 +30,7 @@ import {
 import { toast } from "sonner"
 
 import { ReportReason, ReportStatus } from "@/generated/prisma/enums"
+import { TiptapEditor } from "@/components/user/TiptapEditor"
 
 type FlashcardData = {
   id: string
@@ -196,20 +197,6 @@ export default function AdminReportDetailPage({
     return "text-green-600 font-semibold"
   }
 
-  function renderNoteContent(content: any) {
-    try {
-      if (typeof content === 'string') {
-        return content
-      }
-      if (content?.type === 'doc' && content?.content) {
-        return JSON.stringify(content, null, 2)
-      }
-      return JSON.stringify(content, null, 2)
-    } catch {
-      return String(content)
-    }
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -243,9 +230,7 @@ export default function AdminReportDetailPage({
       </Button>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Reports Summary */}
           <Card>
             <CardHeader>
               <CardTitle>Reports Summary</CardTitle>
@@ -280,7 +265,6 @@ export default function AdminReportDetailPage({
             </CardContent>
           </Card>
 
-          {/* Individual Reports */}
           <Card>
             <CardHeader>
               <CardTitle>Individual Reports ({report.reports.length})</CardTitle>
@@ -326,7 +310,6 @@ export default function AdminReportDetailPage({
             </CardContent>
           </Card>
 
-          {/* Reported Content */}
           <Card>
             <CardHeader>
               <CardTitle>Reported {report.contentType === "note" ? "Note" : "Flashcard Set"}</CardTitle>
@@ -375,11 +358,11 @@ export default function AdminReportDetailPage({
                   {report.contentType === "note" && content.content && (
                     <div>
                       <Label className="text-sm font-semibold">Content Preview</Label>
-                      <div className="mt-2 p-4 bg-muted rounded-lg max-h-96 overflow-y-auto">
-                        <pre className="text-sm whitespace-pre-wrap font-mono">
-                          {renderNoteContent(content.content)}
-                        </pre>
-                      </div>
+                      <TiptapEditor
+                        content={content.content}
+                        onChange={() => {}}
+                        readonly
+                      />
                     </div>
                   )}
 
@@ -434,7 +417,6 @@ export default function AdminReportDetailPage({
           </Card>
         </div>
 
-        {/* Actions Sidebar */}
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -551,7 +533,6 @@ export default function AdminReportDetailPage({
             </CardContent>
           </Card>
 
-          {/* Report Info Card */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Report Information</CardTitle>

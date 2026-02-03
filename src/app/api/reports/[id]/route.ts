@@ -28,7 +28,6 @@ export async function GET(
       )
     }
 
-    // Parse ID format: "note-123" or "flashcard-456"
     const [contentType, contentIdStr] = params.id.split("-")
     const contentId = Number(contentIdStr)
 
@@ -39,7 +38,6 @@ export async function GET(
       )
     }
 
-    // Get all reports for this content
     const reports = await prisma.report.findMany({
       where: contentType === "note"
         ? { noteId: contentId, contentType: "note" }
@@ -69,7 +67,6 @@ export async function GET(
       )
     }
 
-    // Get content details
     let content = null
     if (contentType === "note") {
       content = await prisma.note.findUnique({
@@ -119,13 +116,11 @@ export async function GET(
       })
     }
 
-    // Count reasons
     const reasonCounts = reports.reduce((acc, report) => {
       acc[report.reason] = (acc[report.reason] || 0) + 1
       return acc
     }, {} as Record<string, number>)
 
-    // Get status distribution
     const statusCounts = reports.reduce((acc, report) => {
       acc[report.status] = (acc[report.status] || 0) + 1
       return acc
