@@ -20,10 +20,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ flashca
       { status: 400 }
     )
 
-    const flashcardSet = await prisma.flashcardSet.findUnique({
+    const flashcardSet = await prisma.content.findUnique({
       where: {
         id: flashcardId,
-        userId
+        userId,
       },
       select: {
         id: true,
@@ -31,7 +31,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ flashca
         description: true,
         visibility: true,
         category: true,
-        flashcards: true
+        content: true
       }
     })
 
@@ -76,7 +76,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ flashc
     }
 
     const body = await req.json()
-    const { title, description, category, visibility, flashcards } = body
+    const { title, description, category, visibility, flashcards: content } = body
 
     if (typeof title !== 'string' || title.trim().length === 0) {
       return NextResponse.json(
@@ -85,14 +85,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ flashc
       )
     }
 
-    if (!Array.isArray(flashcards) || flashcards.length === 0) {
+    if (!Array.isArray(content) || content.length === 0) {
       return NextResponse.json(
         { error: "Flashcards are required and must not be empty." },
         { status: 400 }
       )
     }
 
-    const existingFlashcard = await prisma.flashcardSet.findUnique({
+    const existingFlashcard = await prisma.content.findUnique({
       where: { id: flashcardId, userId }
     })
 
@@ -103,7 +103,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ flashc
       )
     }
 
-    const updated = await prisma.flashcardSet.update({
+    const updated = await prisma.content.update({
       where: {
         id: flashcardId,
         userId,
@@ -113,7 +113,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ flashc
         description,
         category,
         visibility,
-        flashcards,
+        content,
       },
     })
 
@@ -145,7 +145,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ flas
     const userId = Number(session.user.id)
     const flashcardId = Number(id)
 
-    await prisma.flashcardSet.delete({
+    await prisma.content.delete({
       where: {
         userId,
         id: flashcardId

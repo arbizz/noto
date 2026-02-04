@@ -43,18 +43,20 @@ export async function GET(req: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    const totalFlashcardsCount = await prisma.flashcardSet.count({
+    const totalFlashcardsCount = await prisma.content.count({
       where: {
         userId,
+        contentType: "flashcard",
         ...(category && { category }),
         ...(visibility && { visibility }),
         ...(search && { title: { contains: search } })
       }
     })
 
-    const flashcards = await prisma.flashcardSet.findMany({
+    const flashcards = await prisma.content.findMany({
       where: {
         userId,
+        contentType: "flashcard",
         ...(category && { category }),
         ...(visibility && { visibility }),
         ...(search && { title: { contains: search } })
@@ -124,9 +126,9 @@ export async function POST(req: NextRequest) {
     const userId = Number(session.user.id)
 
     const body = await req.json()
-    const { title, description, flashcards, visibility, category } = body
+    const { title, description, flashcards: content, visibility, category } = body
 
-    if (!title || !Array.isArray(flashcards) || flashcards.length === 0) {
+    if (!title || !Array.isArray(content) || content.length === 0) {
       return NextResponse.json(
         { error: "Title and flashcards are required." },
         { status: 400 },
@@ -134,12 +136,13 @@ export async function POST(req: NextRequest) {
     }
 
     if (category === "") {
-      const { id } = await prisma.flashcardSet.create({
+      const { id } = await prisma.content.create({
         data: {
           userId,
           title,
+          contentType: "flashcard",
           description,
-          flashcards,
+          content,
           visibility,
           category: "other"
         },
@@ -154,12 +157,13 @@ export async function POST(req: NextRequest) {
       )
     }
     
-    const { id } = await prisma.flashcardSet.create({
+    const { id } = await prisma.content.create({
       data: {
         userId,
         title,
+        contentType: "flashcard",
         description,
-        flashcards,
+        content,
         visibility,
         category
       },

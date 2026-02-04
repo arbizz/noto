@@ -25,8 +25,7 @@ model User {
 
   accounts       Account[]
   bookmarks      Bookmark[]
-  notes          Note[]
-  flashcardSets  FlashcardSet[]
+  contents       Content[]
   reports        Report[]
   likes          Like[]
   notifications  Notification[]
@@ -55,20 +54,40 @@ model Account {
   @@map("accounts")
 }
 
+model Content {
+  id            Int             @id @default(autoincrement())
+  userId        Int             @map("user_id")
+  contentType   ContentType     @map("content_type")
+  title         String          @default("Untitled") @db.VarChar(150)
+  description   String?         @db.Text
+  content       Json            // For note content or flashcards array
+  visibility    Visibility      @default(private)
+  category      ContentCategory @default(other)
+  createdAt     DateTime        @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP")) @map("created_at")
+  updatedAt     DateTime        @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")) @map("updated_at")
+
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reports     Report[]
+  bookmarks   Bookmark[]
+  likes       Like[]
+
+  @@index([userId, contentType])
+  @@index([visibility, category])
+  @@map("contents")
+}
+
 model Bookmark {
   id               Int          @id @default(autoincrement())
   userId           Int          @map("user_id")
-  noteId           Int?         @map("note_id")
-  flashcardSetId   Int?         @map("flashcard_set_id")
+  contentId        Int          @map("content_id")
   contentType      ContentType  @map("content_type")
   category         String?      @db.VarChar(100)
   createdAt        DateTime     @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP")) @map("created_at")
 
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  note          Note?         @relation(fields: [noteId], references: [id], onDelete: Cascade)
-  flashcardSet  FlashcardSet? @relation(fields: [flashcardSetId], references: [id], onDelete: Cascade)
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content  Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, noteId, flashcardSetId])
+  @@unique([userId, contentId])
   @@map("bookmarks")
 }
 
@@ -82,65 +101,24 @@ model Contact {
   @@map("contacts")
 }
 
-model FlashcardSet {
-  id            Int             @id @default(autoincrement())
-  userId        Int             @map("user_id")
-  title         String          @default("Untitled") @db.VarChar(150)
-  description   String?         @db.Text
-  flashcards    Json
-  visibility    Visibility      @default(private)
-  category      ContentCategory @default(other)
-  createdAt     DateTime        @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP")) @map("created_at")
-  updatedAt     DateTime        @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")) @map("updated_at")
-
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reports     Report[]
-  bookmarks   Bookmark[]
-  likes       Like[]
-
-  @@map("flashcard_set")
-}
-
-model Note {
-  id          Int             @id @default(autoincrement())
-  userId      Int             @map("user_id")
-  title       String          @default("Untitled") @db.VarChar(150)
-  description String?         @db.Text
-  content     Json
-  visibility  Visibility      @default(private)
-  category    ContentCategory @default(other)
-  createdAt   DateTime        @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP")) @map("created_at")
-  updatedAt   DateTime        @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")) @map("updated_at")
-
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reports     Report[]
-  bookmarks   Bookmark[]
-  likes       Like[]
-
-  @@map("notes")
-}
-
 model Like {
   id               Int          @id @default(autoincrement())
   userId           Int          @map("user_id")
-  noteId           Int?         @map("note_id")
-  flashcardSetId   Int?         @map("flashcard_set_id")
+  contentId        Int          @map("content_id")
   contentType      ContentType  @map("content_type")
   createdAt        DateTime     @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP")) @map("created_at")
 
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  note          Note?         @relation(fields: [noteId], references: [id], onDelete: Cascade)
-  flashcardSet  FlashcardSet? @relation(fields: [flashcardSetId], references: [id], onDelete: Cascade)
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content  Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, noteId, flashcardSetId])
+  @@unique([userId, contentId])
   @@map("likes")
 }
 
 model Report {
   id               Int          @id @default(autoincrement())
   userId           Int          @map("user_id")
-  noteId           Int?         @map("note_id")
-  flashcardSetId   Int?         @map("flashcard_set_id")
+  contentId        Int          @map("content_id")
   contentType      ContentType  @map("content_type")
   reason           ReportReason
   description      String?      @db.VarChar(100)
@@ -148,9 +126,8 @@ model Report {
   createdAt        DateTime     @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP")) @map("created_at")
   updatedAt        DateTime     @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")) @map("updated_at")
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  note         Note?         @relation(fields: [noteId], references: [id], onDelete: Cascade)
-  flashcardSet FlashcardSet? @relation(fields: [flashcardSetId], references: [id], onDelete: Cascade)
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content  Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
 
   @@map("reports")
 }

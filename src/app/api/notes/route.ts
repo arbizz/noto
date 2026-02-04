@@ -43,18 +43,20 @@ export async function GET(req: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    const totalNotesCount = await prisma.note.count({
+    const totalNotesCount = await prisma.content.count({
       where: {
         userId,
+        contentType: 'note',
         ...(category && { category }),
         ...(visibility && { visibility }),
         ...(search && { title: { contains: search } })
       }
     })
 
-    const notes = await prisma.note.findMany({
+    const notes = await prisma.content.findMany({
       where: {
         userId,
+        contentType: 'note',
         ...(category && { category }),
         ...(visibility && { visibility }),
         ...(search && { title: { contains: search } })
@@ -129,9 +131,10 @@ export async function POST(req: NextRequest) {
     )
 
     if (category === "") {
-      const { id } = await prisma.note.create({
+      const { id } = await prisma.content.create({
         data: {
           userId,
+          contentType: 'note',
           title,
           description,
           content,
@@ -149,9 +152,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { id } = await prisma.note.create({
+    const { id } = await prisma.content.create({
       data: {
         userId,
+        contentType: 'note',
         title,
         description,
         content,

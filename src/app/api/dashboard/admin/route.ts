@@ -6,7 +6,6 @@ export async function GET(req: NextRequest) {
   try {
     const session = await auth()
     
-    // Check if user is authenticated and is admin
     if (!session?.user) {
       return NextResponse.json(
         { error: "Unauthorized" },
@@ -21,7 +20,6 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // Get all statistics
     const [
       totalUsers,
       totalNotes,
@@ -34,50 +32,49 @@ export async function GET(req: NextRequest) {
       publicNotes,
       publicFlashcards
     ] = await Promise.all([
-      // Total users
       prisma.user.count(),
       
-      // Total notes
-      prisma.note.count(),
+      prisma.content.count({
+        where: { contentType: 'note' }
+      }),
       
-      // Total flashcards
-      prisma.flashcardSet.count(),
+      prisma.content.count({
+        where: { contentType: 'flashcard' }
+      }),
       
-      // Total reports
       prisma.report.count(),
       
-      // Pending reports
       prisma.report.count({
         where: { status: "pending" }
       }),
       
-      // Active users
       prisma.user.count({
         where: { status: "active" }
       }),
       
-      // Suspended users
       prisma.user.count({
         where: { status: "suspended" }
       }),
       
-      // Banned users
       prisma.user.count({
         where: { status: "banned" }
       }),
       
-      // Public notes
-      prisma.note.count({
-        where: { visibility: "public" }
+      prisma.content.count({
+        where: {
+          contentType: 'note',
+          visibility: "public"
+        }
       }),
       
-      // Public flashcards
-      prisma.flashcardSet.count({
-        where: { visibility: "public" }
+      prisma.content.count({
+        where: {
+          contentType: 'flashcard',
+          visibility: "public"
+        }
       })
     ])
 
-    // Get recent reports (last 5)
     const recentReports = await prisma.report.findMany({
       select: {
         id: true,
@@ -92,22 +89,11 @@ export async function GET(req: NextRequest) {
             email: true
           }
         },
-        note: {
+        content: {
           select: {
             id: true,
             title: true,
-            user: {
-              select: {
-                id: true,
-                name: true
-              }
-            }
-          }
-        },
-        flashcardSet: {
-          select: {
-            id: true,
-            title: true,
+            contentType: true,
             user: {
               select: {
                 id: true,
@@ -123,7 +109,6 @@ export async function GET(req: NextRequest) {
       take: 5
     })
 
-    // Get recent users (last 5)
     const recentUsers = await prisma.user.findMany({
       select: {
         id: true,
@@ -134,8 +119,7 @@ export async function GET(req: NextRequest) {
         createdAt: true,
         _count: {
           select: {
-            notes: true,
-            flashcardSets: true
+            contents: true
           }
         }
       },
@@ -145,16 +129,21 @@ export async function GET(req: NextRequest) {
       take: 5
     })
 
-    // Get content statistics by category
-    const notesByCategory = await prisma.note.groupBy({
+    const notesByCategory = await prisma.content.groupBy({
       by: ['category'],
+      where: {
+        contentType: 'note'
+      },
       _count: {
         id: true
       }
     })
 
-    const flashcardsByCategory = await prisma.flashcardSet.groupBy({
+    const flashcardsByCategory = await prisma.content.groupBy({
       by: ['category'],
+      where: {
+        contentType: 'flashcard'
+      },
       _count: {
         id: true
       }

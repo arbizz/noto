@@ -55,6 +55,15 @@ export default function NewFlashcardPage() {
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLButtonElement>) {
+    const hasFilledCard = flashcards.some(card => 
+      card.front.trim().length > 0 || card.back.trim().length > 0
+    )
+
+    if (!hasFilledCard) {
+      toast.error("At least one flashcard must be filled")
+      return
+    }
+
     const res = await fetch("/api/flashcards", {
       method: "POST",
       headers: {
@@ -72,8 +81,7 @@ export default function NewFlashcardPage() {
     const {id} = await res.json()
 
     if (id) {
-      toast.success("Created")  
-
+      toast.success("Flashcard set created successfully")  
       router.push(`/flashcards/${id}`)
     }
   }
@@ -108,6 +116,7 @@ export default function NewFlashcardPage() {
       </section>
 
       <section className="mt-12 space-y-4">
+        <p className="-mb-4">Your set  <strong className="text-red-500">*</strong></p>
         {flashcards.map((c, i) => {
           return (
             <div

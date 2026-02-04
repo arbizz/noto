@@ -210,20 +210,23 @@ function InputFilterCategory({
   placeholder?: string
 }) {
   return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-full">
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
+    <div className="space-y-2">
+      <Label className="ml-1">Category:</Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
 
-      <SelectContent>
-        <SelectItem value="all">All</SelectItem>
-        {categoryOptions.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+        <SelectContent>
+          <SelectItem value="all">All</SelectItem>
+          {categoryOptions.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   )
 }
 
@@ -235,25 +238,24 @@ function InputFilterVisibility({
   onChange: (value: string) => void
 }) {
   return (
-    <div className="flex w-full justify-between gap-2">
-      <Label className="whitespace-nowrap">Visibility:</Label>
-
+    <div className="space-y-2">
+      <Label className="ml-1">Visibility:</Label>
       <RadioGroup
         value={value}
         onValueChange={onChange}
         className="flex flex-1 justify-between"
       >
-        <Label className="flex items-center gap-2 border p-2 rounded-md shadow-xs w-full">
+        <Label className="flex items-center gap-2 border p-2 rounded-md shadow-xs w-1/3">
           <RadioGroupItem value="all" />
           All
         </Label>
 
-        <Label className="flex items-center gap-2 border p-2 rounded-md shadow-xs w-full">
+        <Label className="flex items-center gap-2 border p-2 rounded-md shadow-xs w-1/3">
           <RadioGroupItem value="private" />
           Private
         </Label>
 
-        <Label className="flex items-center gap-2 border p-2 rounded-md shadow-xs w-full">
+        <Label className="flex items-center gap-2 border p-2 rounded-md shadow-xs w-1/3">
           <RadioGroupItem value="public" />
           Public
         </Label>
@@ -272,20 +274,23 @@ function InputFilterReason({
   placeholder?: string
 }) {
   return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-full">
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
+    <div className="space-y-2">
+      <Label className="ml-1">Reason:</Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
 
-      <SelectContent>
-        <SelectItem value="all">All</SelectItem>
-        {reportReasonOptions.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+        <SelectContent>
+          <SelectItem value="all">All</SelectItem>
+          {reportReasonOptions.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   )
 }
 
@@ -299,16 +304,19 @@ function InputFilterOrder({
   placeholder?: string
 }) {
   return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-full">
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
+    <div className="space-y-2">
+      <Label className="ml-1">Order:</Label>  
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
 
-      <SelectContent>
-        <SelectItem value="desc">Newest</SelectItem>
-        <SelectItem value="asc">Oldest</SelectItem>
-      </SelectContent>
-    </Select>
+        <SelectContent>
+          <SelectItem value="desc">Newest</SelectItem>
+          <SelectItem value="asc">Oldest</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
   )
 }
 
@@ -322,20 +330,23 @@ function InputFilterStatus({
   placeholder?: string
 }) {
   return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-full">
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
+    <div className="space-y-2">
+      <Label className="ml-1">Status:</Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
 
-      <SelectContent>
-        <SelectItem value="all">All</SelectItem>
-        {reportStatusOptions.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+        <SelectContent>
+          <SelectItem value="all">All</SelectItem>
+          {reportStatusOptions.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   )
 }
 

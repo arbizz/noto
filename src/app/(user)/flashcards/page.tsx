@@ -11,14 +11,14 @@ import { PagePagination } from "@/components/shared/PagePagination"
 import { FilterConfig, InputFilter } from "@/components/shared/InputFilter"
 
 import { PaginationMeta } from "@/types/shared/pagination"
-import { FlashcardSetWithExtras } from "@/types/shared/nf_extras"
+import { ContentWithExtras } from "@/types/shared/nf_extras"
 import { CategoryFilter, VisibilityFilter } from "@/types/shared/filter"
 
 export default function FlashcardsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const [flashcards, setFlashcards] = useState<FlashcardSetWithExtras[]>([])
+  const [flashcards, setFlashcards] = useState<ContentWithExtras[]>([])
   const [pagination, setPagination] = useState<PaginationMeta | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -64,7 +64,7 @@ export default function FlashcardsPage() {
         const {
           flashcards,
           pagination,
-        }: { flashcards: FlashcardSetWithExtras[]; pagination: PaginationMeta } = data
+        }: { flashcards: ContentWithExtras[]; pagination: PaginationMeta } = data
 
         const requestedPage = parseInt(searchParams.get("page") ?? "1")
 

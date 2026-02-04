@@ -68,29 +68,13 @@ export async function GET(req: NextRequest) {
             image: true
           }
         },
-        note: {
+        content: {
           select: {
             id: true,
             title: true,
             category: true,
             visibility: true,
-            userId: true,
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                image: true
-              }
-            }
-          }
-        },
-        flashcardSet: {
-          select: {
-            id: true,
-            title: true,
-            category: true,
-            visibility: true,
+            contentType: true,
             userId: true,
             user: {
               select: {
@@ -111,18 +95,14 @@ export async function GET(req: NextRequest) {
     const groupedMap = new Map<string, any>()
 
     for (const report of allReports) {
-      const contentKey = report.contentType === "note" 
-        ? `note-${report.noteId}`
-        : `flashcard-${report.flashcardSetId}`
+      const contentKey = `${report.contentType}-${report.contentId}`
       
       if (!groupedMap.has(contentKey)) {
-        const content = report.note || report.flashcardSet
-        
         groupedMap.set(contentKey, {
-          contentId: report.noteId || report.flashcardSetId,
+          contentId: report.contentId,
           contentType: report.contentType,
-          content: content,
-          contentOwner: content?.user,
+          content: report.content,
+          contentOwner: report.content?.user,
           reports: [],
           totalReports: 0,
           latestReportDate: report.createdAt,
@@ -249,10 +229,7 @@ export async function POST(req: NextRequest) {
       where: {
         userId,
         contentType,
-        ...(contentType === "note"
-          ? { noteId: Number(contentId) }
-          : { flashcardSetId: Number(contentId) }
-        )
+        contentId: Number(contentId)
       }
     })
 
@@ -270,13 +247,10 @@ export async function POST(req: NextRequest) {
       data: {
         userId,
         contentType,
+        contentId: Number(contentId),
         reason,
         description: description || null,
-        status: "pending",
-        ...(contentType === "note"
-          ? { noteId: Number(contentId) }
-          : { flashcardSetId: Number(contentId) }
-        )
+        status: "pending"
       }
     })
 

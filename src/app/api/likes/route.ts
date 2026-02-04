@@ -31,20 +31,15 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Check if like exists
     const existingLike = await prisma.like.findFirst({
       where: {
         userId,
         contentType,
-        ...(contentType === "note"
-          ? { noteId: Number(contentId) }
-          : { flashcardSetId: Number(contentId) }
-        )
+        contentId: Number(contentId)
       }
     })
 
     if (existingLike) {
-      // Remove like
       await prisma.like.delete({
         where: {
           id: existingLike.id
@@ -59,15 +54,11 @@ export async function POST(req: NextRequest) {
         { status: 200 }
       )
     } else {
-      // Add like
       await prisma.like.create({
         data: {
           userId,
           contentType,
-          ...(contentType === "note"
-            ? { noteId: Number(contentId) }
-            : { flashcardSetId: Number(contentId) }
-          )
+          contentId: Number(contentId)
         }
       })
 

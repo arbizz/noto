@@ -14,13 +14,18 @@ export async function GET(req: NextRequest) {
 
     const userId = Number(session.user.id)
 
-    // Get total counts
     const [totalNotes, totalFlashcards, totalBookmarks, totalLikes] = await Promise.all([
-      prisma.note.count({
-        where: { userId }
+      prisma.content.count({
+        where: {
+          userId,
+          contentType: 'note'
+        }
       }),
-      prisma.flashcardSet.count({
-        where: { userId }
+      prisma.content.count({
+        where: {
+          userId,
+          contentType: 'flashcard'
+        }
       }),
       prisma.bookmark.count({
         where: { userId }
@@ -30,9 +35,11 @@ export async function GET(req: NextRequest) {
       })
     ])
 
-    // Get recent notes (last 5)
-    const recentNotes = await prisma.note.findMany({
-      where: { userId },
+    const recentNotes = await prisma.content.findMany({
+      where: {
+        userId,
+        contentType: 'note'
+      },
       select: {
         id: true,
         title: true,
@@ -46,9 +53,11 @@ export async function GET(req: NextRequest) {
       take: 5
     })
 
-    // Get recent flashcards (last 5)
-    const recentFlashcards = await prisma.flashcardSet.findMany({
-      where: { userId },
+    const recentFlashcards = await prisma.content.findMany({
+      where: {
+        userId,
+        contentType: 'flashcard'
+      },
       select: {
         id: true,
         title: true,

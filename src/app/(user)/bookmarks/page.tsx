@@ -12,8 +12,8 @@ import { FilterConfig, InputFilter } from "@/components/shared/InputFilter"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { CategoryFilter } from "@/types/shared/filter"
+import { ContentWithExtras } from "@/types/shared/nf_extras"
 import { PaginationMeta } from "@/types/shared/pagination"
-import { NoteWithExtras, FlashcardSetWithExtras } from "@/types/shared/nf_extras"
 
 type ReportDialogState = {
   open: boolean
@@ -26,8 +26,8 @@ export default function BookmarksPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const [notes, setNotes] = useState<NoteWithExtras[]>([])
-  const [flashcards, setFlashcards] = useState<FlashcardSetWithExtras[]>([])
+  const [notes, setNotes] = useState<ContentWithExtras[]>([])
+  const [flashcards, setFlashcards] = useState<ContentWithExtras[]>([])
   const [fpagination, setFPagination] = useState<PaginationMeta | null>(null)
   const [npagination, setNPagination] = useState<PaginationMeta | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -287,8 +287,8 @@ export default function BookmarksPage() {
           flashcards,
           pagination,
         }: {
-          notes: NoteWithExtras[]
-          flashcards: FlashcardSetWithExtras[]
+          notes: ContentWithExtras[]
+          flashcards: ContentWithExtras[]
           pagination: {
             npagination: PaginationMeta
             fpagination: PaginationMeta
@@ -417,7 +417,7 @@ export default function BookmarksPage() {
                   <NFCard 
                     key={n.id} 
                     content={n} 
-                    onClick={() => router.push(`/notes/${n.id}`)}
+                    onClick={() => router.push(`/discover/note-${n.id}`)}
                     onBookmark={(e) => handleToggleBookmark(n.id, "note", e)}
                     onLike={(e) => handleToggleLike(n.id, "note", e)}
                     onReport={(e) => handleOpenReportDialog(n.id, "note", n.title, n.isReported, e)}
@@ -443,7 +443,7 @@ export default function BookmarksPage() {
                   <NFCard 
                     key={f.id} 
                     content={f} 
-                    onClick={() => router.push(`/flashcards/${f.id}`)}
+                    onClick={() => router.push(`/discover/flashcard-${f.id}`)}
                     onBookmark={(e) => handleToggleBookmark(f.id, "flashcard", e)}
                     onLike={(e) => handleToggleLike(f.id, "flashcard", e)}
                     onReport={(e) => handleOpenReportDialog(f.id, "flashcard", f.title, f.isReported, e)}

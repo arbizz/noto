@@ -4,162 +4,156 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { BookOpen, BrainCircuit, Globe, ShieldCheck, Sparkles, Users } from "lucide-react"
+import Image from "next/image"
+import { categoryOptions } from "@/constants/enums"
 
 export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col font-sans">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
         <Navbar />
       </header>
 
       <main className="flex-1">
-        {/* HERO SECTION */}
         <section className="space-y-6 pb-8 pt-6 md:pb-12 md:pt-10 lg:py-32">
-          <div className="container flex max-w-[64rem] flex-col items-center gap-4 text-center mx-auto px-4">
+          <div className="container flex max-w-5xl flex-col items-center gap-4 text-center mx-auto px-4">
             <Badge variant="secondary" className="rounded-2xl px-4 py-1.5 text-sm font-medium">
-              🚀 Platform Belajar Masa Depan
+              Future learning platform
             </Badge>
-            <h1 className="font-heading text-4xl font-bold sm:text-5xl md:text-6xl lg:text-7xl">
-              Catat, Pelajari, dan <span className="text-primary">Bagikan</span> Pengetahuanmu.
+            <h1
+              // className="font-heading text-4xl font-bold sm:text-5xl md:text-6xl lg:text-7xl"
+            >
+              Record, Learn, and <span className="text-primary">Share</span> Your Knowledge.
             </h1>
-            <p className="max-w-[42rem] leading-normal text-muted-foreground sm:text-xl sm:leading-8 font-body">
-              Noto membantu kamu membuat catatan terstruktur dan flashcard interaktif. 
-              Bergabunglah dengan komunitas pembelajar dan tingkatkan skor belajarmu hari ini.
+            <p className="max-w-2xl leading-normal text-muted-foreground">
+              Noto helps you create structured notes and interactive flashcards.
+              Join the community of learners and improve your learning score today.
             </p>
             <div className="space-x-4">
               <Link href="/register">
                 <Button size="lg" className="h-11 px-8 rounded-full font-semibold">
-                  Mulai Sekarang
+                  Start Now
                 </Button>
               </Link>
               <Link href="/discover">
                 <Button variant="outline" size="lg" className="h-11 px-8 rounded-full">
-                  Jelajahi Karya
+                  Explore Works
                 </Button>
               </Link>
             </div>
             
-            {/* Mockup / Visual Placeholder */}
             <div className="mt-16 rounded-lg border bg-background shadow-2xl overflow-hidden w-full max-w-5xl aspect-video relative group">
-              <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-primary/5 z-0" />
+              <div className="absolute inset-0 bg-linear-to-tr from-primary/10 via-transparent to-primary/5 z-0" />
               <div className="flex items-center justify-center h-full text-muted-foreground font-mono">
-                {/* Anda bisa mengganti ini dengan screenshot aplikasi dashboard nanti */}
-                [Dashboard Application Preview Image]
+                <Image alt="Banner image" src="/banner.png" width={1080} height={720} />
               </div>
             </div>
           </div>
         </section>
 
-        {/* FEATURES SECTION (Based on Use Cases) */}
         <section id="features" className="container space-y-6 bg-slate-50/50 py-8 dark:bg-transparent md:py-12 lg:py-24 mx-auto px-4">
-          <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center">
-            <h2 className="font-heading text-3xl leading-[1.1] sm:text-3xl md:text-6xl">
-              Fitur Unggulan
+          <div className="mx-auto flex max-w-232 flex-col items-center space-y-4 text-center">
+            <h2
+              // className="font-heading text-3xl leading-[1.1] sm:text-3xl md:text-6xl"
+            >
+              Key Features
             </h2>
-            <p className="max-w-[85%] leading-normal text-muted-foreground sm:text-lg sm:leading-7 font-body">
-              Didesain untuk siswa dan pengajar. Semua alat yang Anda butuhkan dalam satu platform.
+            <p className="max-w-[85%] leading-normal text-muted-foreground">
+              Designed for students and teachers. All the tools you need in one platform.
             </p>
           </div>
           
-          <div className="mx-auto grid justify-center gap-4 sm:grid-cols-2 md:max-w-[64rem] md:grid-cols-3">
-            {/* Feature 1: Notes (Membuat Catatan) */}
+          <div className="mx-auto grid justify-center gap-4 sm:grid-cols-2 md:max-w-5xl md:grid-cols-3">
             <Card className="flex flex-col justify-between border-none shadow-md hover:shadow-lg transition-all">
               <CardHeader>
                 <BookOpen className="h-10 w-10 text-primary mb-2" />
                 <CardTitle className="font-heading">Rich Text Notes</CardTitle>
                 <CardDescription>
-                  Buat catatan yang rapi dengan editor canggih. Dukungan format teks lengkap untuk Matematika, Sains, dan lainnya.
+                  Create neat notes with an advanced editor. Full text format support for Mathematics, Science, and more.
                 </CardDescription>
               </CardHeader>
             </Card>
 
-            {/* Feature 2: Flashcards (Membuat Flashcard) */}
             <Card className="flex flex-col justify-between border-none shadow-md hover:shadow-lg transition-all">
               <CardHeader>
                 <BrainCircuit className="h-10 w-10 text-primary mb-2" />
                 <CardTitle className="font-heading">Smart Flashcards</CardTitle>
                 <CardDescription>
-                  Ubah materi sulit menjadi kartu belajar interaktif. Cara terbaik untuk menghafal istilah dan konsep.
+                  Turn difficult material into interactive study cards. The best way to memorize terms and concepts.
                 </CardDescription>
               </CardHeader>
             </Card>
 
-            {/* Feature 3: Community (Membagi ke Publik) */}
             <Card className="flex flex-col justify-between border-none shadow-md hover:shadow-lg transition-all">
               <CardHeader>
                 <Globe className="h-10 w-10 text-primary mb-2" />
-                <CardTitle className="font-heading">Bagikan & Temukan</CardTitle>
+                <CardTitle className="font-heading">Share & Discover</CardTitle>
                 <CardDescription>
-                  Publikasikan catatanmu untuk membantu orang lain. Temukan materi dari komunitas global.
+                  Publish your notes to help others. Discover materials from the global community.
                 </CardDescription>
               </CardHeader>
             </Card>
 
-            {/* Feature 4: Gamification (Score & Likes) */}
             <Card className="flex flex-col justify-between border-none shadow-md hover:shadow-lg transition-all">
               <CardHeader>
                 <Sparkles className="h-10 w-10 text-primary mb-2" />
-                <CardTitle className="font-heading">Sistem Reputasi</CardTitle>
+                <CardTitle className="font-heading">Reputation System</CardTitle>
                 <CardDescription>
-                  Dapatkan skor dan lencana untuk kontribusi berkualitas. Jadilah top contributor di komunitas.
+                  Earn scores and badges for quality contributions. Become a top contributor in the community.
                 </CardDescription>
               </CardHeader>
             </Card>
 
-             {/* Feature 5: Bookmark (Bookmark Catatan) */}
              <Card className="flex flex-col justify-between border-none shadow-md hover:shadow-lg transition-all">
               <CardHeader>
                 <Users className="h-10 w-10 text-primary mb-2" />
-                <CardTitle className="font-heading">Koleksi Pribadi</CardTitle>
+                <CardTitle className="font-heading">Personal Collection</CardTitle>
                 <CardDescription>
-                  Simpan materi favorit dari pengguna lain ke dalam bookmark Anda untuk akses cepat kapan saja.
+                  Save your favorite materials from other users to your bookmarks for quick access anytime.
                 </CardDescription>
               </CardHeader>
             </Card>
 
-            {/* Feature 6: Moderation (Pelaporan) */}
             <Card className="flex flex-col justify-between border-none shadow-md hover:shadow-lg transition-all">
               <CardHeader>
                 <ShieldCheck className="h-10 w-10 text-primary mb-2" />
-                <CardTitle className="font-heading">Lingkungan Aman</CardTitle>
+                <CardTitle className="font-heading">Safe Environment</CardTitle>
                 <CardDescription>
-                  Konten dimoderasi dengan sistem pelaporan yang ketat untuk memastikan informasi yang akurat dan aman.
+                  Content is moderated with a strict reporting system to ensure accurate and safe information.
                 </CardDescription>
               </CardHeader>
             </Card>
           </div>
         </section>
 
-        {/* CATEGORIES SECTION (Based on Enums) */}
         <section className="container py-12 md:py-24 lg:py-32 mx-auto px-4">
-           <div className="flex flex-col items-center gap-4 text-center">
-             <h2 className="font-heading text-3xl font-bold md:text-4xl">Jelajahi Kategori</h2>
-             <p className="text-muted-foreground font-body">Temukan materi pelajaran sesuai minatmu.</p>
-             <div className="flex flex-wrap justify-center gap-2 mt-4 max-w-4xl">
-               {["Mathematics", "Science", "Computer Science", "Business Economics", "Language", "Engineering", "Arts & Humanities"].map((cat) => (
-                 <Badge key={cat} variant="outline" className="text-sm py-2 px-4 cursor-default hover:bg-secondary/50 transition-colors">
-                   {cat}
-                 </Badge>
-               ))}
-             </div>
-           </div>
+            <div className="flex flex-col items-center gap-4 text-center">
+              <h2 className="font-heading text-3xl font-bold md:text-4xl">Explore Categories</h2>
+              <p className="text-muted-foreground font-body">Find study materials according to your interests.</p>
+              <div className="flex flex-wrap justify-center gap-2 mt-4 max-w-4xl">
+                {categoryOptions.map((cat) => (
+                  <Badge key={cat.value} variant="outline" className="text-sm py-2 px-4 cursor-default hover:bg-secondary/50 transition-colors">
+                    {cat.label}
+                  </Badge>
+                ))}
+              </div>
+            </div>
         </section>
 
-        {/* CTA SECTION */}
         <section className="border-t bg-muted/40">
-           <div className="container flex flex-col items-center gap-6 py-24 text-center mx-auto px-4">
-             <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
-               Siap untuk meningkatkan cara belajarmu?
-             </h2>
-             <p className="text-muted-foreground font-body max-w-[600px]">
-               Bergabunglah dengan Noto sekarang. Gratis dan mudah digunakan.
-             </p>
-             <Link href="/register">
-               <Button size="lg" className="mt-4 px-8 py-6 text-lg rounded-full">
-                 Buat Akun Gratis
-               </Button>
-             </Link>
-           </div>
+            <div className="container flex flex-col items-center gap-6 py-24 text-center mx-auto px-4">
+              <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
+                Ready to level up your learning?
+              </h2>
+              <p className="text-muted-foreground font-body max-w-150">
+                Join Noto now. It's free and easy to use.
+              </p>
+              <Link href="/register">
+                <Button size="lg" className="mt-4 px-8 py-6 text-lg rounded-full">
+                  Join
+                </Button>
+              </Link>
+            </div>
         </section>
       </main>
 

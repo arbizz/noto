@@ -4,7 +4,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useState } from "react"
 import { Button } from "../ui/button"
-import { LucideLogOut, LucidePanelLeft, LucideSquare } from "lucide-react"
+import { LucideBookmark, LucideGlobe, LucideHome, LucideLayers, LucideLogOut, LucidePanelLeft, LucideSquare, LucideStickyNote } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { usePathname } from "next/navigation"
 import { Separator } from "../ui/separator"
@@ -36,19 +36,19 @@ function UserSidebar() {
           <Separator />
           <nav className="flex flex-col items-center justify-center p-3 gap-2">
             <SidebarLink href="/dashboard" label="Dashboard">
-              <LucideSquare size={24} className="size-fit" />
+              <LucideHome size={24} className="size-fit" />
             </SidebarLink>
             <SidebarLink href="/notes" label="Notes">
-              <LucideSquare size={24} className="size-fit" />
+              <LucideStickyNote size={24} className="size-fit" />
             </SidebarLink>
             <SidebarLink href="/flashcards" label="Flashcards">
-              <LucideSquare size={24} className="size-fit" />
+              <LucideLayers size={24} className="size-fit" />
             </SidebarLink>
             <SidebarLink href="/discover" label="Discover">
-              <LucideSquare size={24} className="size-fit" />
+              <LucideGlobe size={24} className="size-fit" />
             </SidebarLink>
             <SidebarLink href="/bookmarks" label="Bookmarks">
-              <LucideSquare size={24} className="size-fit" />
+              <LucideBookmark size={24} className="size-fit" />
             </SidebarLink>
           </nav>
         </div>

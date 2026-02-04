@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server"
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth()
@@ -15,7 +15,6 @@ export async function GET(
       )
     }
 
-    // Check if user is admin
     const user = await prisma.user.findUnique({
       where: { id: Number(session.user.id) },
       select: { role: true }
@@ -28,7 +27,8 @@ export async function GET(
       )
     }
 
-    const [contentType, contentIdStr] = params.id.split("-")
+    const { id } = await params
+    const [contentType, contentIdStr] = id.split("-")
     const contentId = Number(contentIdStr)
 
     if (!["note", "flashcard"].includes(contentType) || isNaN(contentId)) {
@@ -39,9 +39,10 @@ export async function GET(
     }
 
     const reports = await prisma.report.findMany({
-      where: contentType === "note"
-        ? { noteId: contentId, contentType: "note" }
-        : { flashcardSetId: contentId, contentType: "flashcard" },
+      where: {
+        contentId: contentId,
+        contentType: contentType as "note" | "flashcard"
+      },
       include: {
         user: {
           select: {
@@ -67,54 +68,31 @@ export async function GET(
       )
     }
 
-    let content = null
-    if (contentType === "note") {
-      content = await prisma.note.findUnique({
-        where: { id: contentId },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              image: true,
-              score: true,
-              status: true
-            }
-          },
-          _count: {
-            select: {
-              likes: true,
-              bookmarks: true,
-              reports: true
-            }
+    const content = await prisma.content.findUnique({
+      where: {
+        id: contentId,
+        contentType: contentType as "note" | "flashcard"
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            score: true,
+            status: true
+          }
+        },
+        _count: {
+          select: {
+            likes: true,
+            bookmarks: true,
+            reports: true
           }
         }
-      })
-    } else {
-      content = await prisma.flashcardSet.findUnique({
-        where: { id: contentId },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              image: true,
-              score: true,
-              status: true
-            }
-          },
-          _count: {
-            select: {
-              likes: true,
-              bookmarks: true,
-              reports: true
-            }
-          }
-        }
-      })
-    }
+      }
+    })
 
     const reasonCounts = reports.reduce((acc, report) => {
       acc[report.reason] = (acc[report.reason] || 0) + 1

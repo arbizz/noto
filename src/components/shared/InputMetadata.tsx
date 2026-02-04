@@ -40,9 +40,11 @@ type MetadataConfig =
   | VisibilityMetadataConfig
 
 function InputMetadata({
-  metadatas
+  metadatas,
+  forUpdate = false
 }: {
   metadatas: MetadataConfig[]
+  forUpdate?: boolean
 }) {
   const titleMetadata = metadatas.find((m) => m.type === "title") as TitleMetadataConfig | undefined
   const descriptionMetadata = metadatas.find((m) => m.type === "description") as DescriptionMetadataConfig | undefined
@@ -73,6 +75,7 @@ function InputMetadata({
         {visibilityMetadata && <InputMetadataVisibility
           value={visibilityMetadata.value}
           onChange={visibilityMetadata.onChange}
+          forUpdate={forUpdate}
         />}
       </div>
     </div>
@@ -89,8 +92,10 @@ function InputMetadataTitle({
   placeholder?: string
 }) {
   return (
-    <div className="flex flex-col gap-1">
-      <Label htmlFor="title" className="ml-1">Title</Label>
+    <div className="space-y-2">
+      <Label htmlFor="title" className="ml-1">
+        Title <strong className="text-red-500">*</strong>
+      </Label>
       <Input
         id="title"
         type="text"
@@ -112,7 +117,7 @@ function InputMetadataDescription({
   placeholder?: string
 }) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="space-y-2">
       <Label htmlFor="desc" className="ml-1">Description</Label>
       <Textarea
         id="desc"
@@ -134,32 +139,37 @@ function InputMetadataCategory({
   placeholder?: string
 }) {
   return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-full">
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
+    <div className="space-y-2">
+      <Label className="ml-1">Category:</Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
 
-      <SelectContent>
-        {categoryOptions.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+        <SelectContent>
+          {categoryOptions.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   )
 }
 
 function InputMetadataVisibility({
   value,
   onChange,
+  forUpdate = false
 }: {
   value: string
   onChange: (value: Visibility) => void
+  forUpdate: boolean
 }) {
   return (
-    <div className="flex gap-2 w-full">
-      <Label htmlFor="vis" className="whitespace-nowrap">Visibility</Label>
+    <div className="space-y-2">
+      <Label htmlFor="vis" className="ml-1">Visibility:</Label>
       <RadioGroup
         id="vis"
         value={value}
@@ -167,12 +177,12 @@ function InputMetadataVisibility({
         className="flex flex-1 justify-between"
       >
         <Label className="flex flex-1 items-center gap-2 border p-2 rounded-md shadow-xs cursor-pointer">
-          <RadioGroupItem value="private" />
+          <RadioGroupItem value="private" disabled={forUpdate} />
           Private
         </Label>
 
         <Label className="flex flex-1 items-center gap-2 border p-2 rounded-md shadow-xs cursor-pointer">
-          <RadioGroupItem value="public" />
+          <RadioGroupItem value="public"/>
           Public
         </Label>
       </RadioGroup>

@@ -19,6 +19,25 @@ interface InitialState {
   content: JSONContent
 }
 
+function isContentEmpty(content: JSONContent | undefined): boolean {
+  if (!content) return true
+  if (!content.content || content.content.length === 0) return true
+  
+  function hasText(node: JSONContent): boolean {
+    if (node.text && node.text.trim().length > 0) {
+      return true
+    }
+    
+    if (node.content && Array.isArray(node.content)) {
+      return node.content.some(child => hasText(child))
+    }
+    
+    return false
+  }
+  
+  return !content.content.some(node => hasText(node))
+}
+
 export default function NoteUpdatePage() {
   const router = useRouter()
   const { noteId } = useParams()
@@ -62,6 +81,8 @@ export default function NoteUpdatePage() {
           visibility: data.visibility,
           content: data.content as JSONContent,
         })
+
+        setRenderKey((k) => k + 1)
       } catch (error) {
         console.error("Error fetching note data:", error)
         toast.error("Failed to load note")
@@ -111,6 +132,11 @@ export default function NoteUpdatePage() {
   async function handleUpdate() {
     if (!noteId || !isDirty) return
 
+    if (isContentEmpty(content)) {
+      toast.error("Content must contain at least one character")
+      return
+    }
+    
     setIsSaving(true)
     try {
       const res = await fetch(`/api/notes/${noteId}`, {
@@ -145,6 +171,7 @@ export default function NoteUpdatePage() {
 
       setIsDirty(false)
       toast.success("Note saved successfully")
+      router.push(`/notes/${noteId}`)
     } catch (error) {
       console.error("Error updating note:", error)
       toast.error("Failed to save note")
@@ -197,10 +224,11 @@ export default function NoteUpdatePage() {
           Back to View
         </Button>
 
-        <InputMetadata metadatas={metadatas} />
+        <InputMetadata metadatas={metadatas}/>
       </section>
 
       <section className="mt-12 space-y-4">
+        <p>Notes  <strong className="text-red-500">*</strong></p>
         {content && (
           <TiptapEditor
             key={renderKey}

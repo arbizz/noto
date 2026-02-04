@@ -48,7 +48,7 @@ export default function FlashcardViewPage() {
         setDescription(data.description)
         setCategory(data.category)
         setVisibility(data.visibility)
-        setFlashcards(data.flashcards)
+        setFlashcards(data.content)
       } catch (error) {
         console.error("Error fetching flashcard data:", error)
         toast.error("Failed to load flashcard set")

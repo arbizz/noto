@@ -11,14 +11,14 @@ import { PagePagination } from "@/components/shared/PagePagination"
 import { FilterConfig, InputFilter } from "@/components/shared/InputFilter"
 
 import { PaginationMeta } from "@/types/shared/pagination"
-import { NoteWithExtras } from "@/types/shared/nf_extras"
+import { ContentWithExtras } from "@/types/shared/nf_extras"
 import { CategoryFilter, VisibilityFilter } from "@/types/shared/filter"
 
 export default function NotesPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const [notes, setNotes] = useState<NoteWithExtras[]>([])
+  const [notes, setNotes] = useState<ContentWithExtras[]>([])
   const [pagination, setPagination] = useState<PaginationMeta | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -64,7 +64,7 @@ export default function NotesPage() {
         const {
           notes,
           pagination,
-        }: { notes: NoteWithExtras[]; pagination: PaginationMeta } = data
+        }: { notes: ContentWithExtras[]; pagination: PaginationMeta } = data
 
         const requestedPage = parseInt(searchParams.get("page") ?? "1")
 

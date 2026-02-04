@@ -9,6 +9,7 @@ import { TiptapEditor } from "@/components/user/TiptapEditor"
 import { InputMetadata, MetadataConfig } from "@/components/shared/InputMetadata"
 
 import { ContentCategory, Visibility } from "@/generated/prisma/enums"
+import { toast } from "sonner"
 
 export default function NewNotePage() {
   const router = useRouter()
@@ -20,6 +21,14 @@ export default function NewNotePage() {
   const [visibility, setVisibility] = useState<Visibility>("private")
 
   async function handleCreate() {
+    const contentText = JSON.stringify(content)
+    const hasText = /[a-zA-Z0-9]/.test(contentText)
+    
+    if (!hasText) {
+      toast.error("Content must contain at least one character")
+      return
+    }
+
     const res = await fetch("/api/notes", {
       method: "POST",
       headers: {
@@ -36,7 +45,10 @@ export default function NewNotePage() {
 
     const { id: noteId } = await res.json()
 
-    router.push(`/notes/${noteId}`)
+    if (noteId) {
+      toast.success("Note created successfully")
+      router.push(`/notes/${noteId}`)
+    }
   }
 
   const metadatas: MetadataConfig[] = [
@@ -69,6 +81,7 @@ export default function NewNotePage() {
       </section>
 
       <section className="flex flex-col gap-8 mt-12">
+        <p className="-mb-4">Notes  <strong className="text-red-500">*</strong></p>
         <TiptapEditor
           content={content}
           onChange={setContent}

@@ -1,6 +1,5 @@
 "use client"
 
-import { FlashcardSet, Note } from "@/generated/prisma/client"
 import { LucideEye, LucideHeart, LucideBookmark, LucideFlag, LucideMoreVertical } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter, CardAction } from "../ui/card"
 import { Badge } from "../ui/badge"
@@ -13,34 +12,7 @@ import {
   DropdownMenuTrigger 
 } from "../ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip"
-
-type NoteWithExtras = Note & {
-  user?: {
-    id: number
-    name: string
-    image: string | null
-  }
-  _count?: {
-    likes: number
-  }
-  isBookmarked?: boolean
-  isLiked?: boolean
-  isReported?: boolean
-}
-
-type FlashcardSetWithExtras = FlashcardSet & {
-  user?: {
-    id: number
-    name: string
-    image: string | null
-  }
-  _count?: {
-    likes: number
-  }
-  isBookmarked?: boolean
-  isLiked?: boolean
-  isReported?: boolean
-}
+import { ContentWithExtras } from "@/types/shared/nf_extras"
 
 function NFCard({
   content,
@@ -52,7 +24,7 @@ function NFCard({
   showLikeOnly = false,
   ...props
 }: {
-  content: NoteWithExtras | FlashcardSetWithExtras
+  content: ContentWithExtras
   onClick: () => void
   onBookmark?: (e: React.MouseEvent) => void
   onLike?: (e: React.MouseEvent) => void

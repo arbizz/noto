@@ -48,13 +48,26 @@ export async function GET(req: NextRequest) {
     }
 
     const [totalNotesCount, totalFlashcardsCount] = await Promise.all([
-      prisma.note.count({ where: baseWhere }),
-      prisma.flashcardSet.count({ where: baseWhere })
+      prisma.content.count({ 
+        where: { 
+          ...baseWhere,
+          contentType: 'note'
+        } 
+      }),
+      prisma.content.count({ 
+        where: { 
+          ...baseWhere,
+          contentType: 'flashcard'
+        } 
+      })
     ])
 
     const [notes, flashcards] = await Promise.all([
-      prisma.note.findMany({
-        where: baseWhere,
+      prisma.content.findMany({
+        where: {
+          ...baseWhere,
+          contentType: 'note'
+        },
         include: {
           user: {
             select: {
@@ -75,8 +88,11 @@ export async function GET(req: NextRequest) {
         skip,
         take: limit
       }),
-      prisma.flashcardSet.findMany({
-        where: baseWhere,
+      prisma.content.findMany({
+        where: {
+          ...baseWhere,
+          contentType: 'flashcard'
+        },
         include: {
           user: {
             select: {
@@ -104,58 +120,58 @@ export async function GET(req: NextRequest) {
         where: {
           userId,
           contentType: "note",
-          noteId: { in: notes.map(n => n.id) }
+          contentId: { in: notes.map(n => n.id) }
         },
-        select: { noteId: true }
+        select: { contentId: true }
       }),
       prisma.bookmark.findMany({
         where: {
           userId,
           contentType: "flashcard",
-          flashcardSetId: { in: flashcards.map(f => f.id) }
+          contentId: { in: flashcards.map(f => f.id) }
         },
-        select: { flashcardSetId: true }
+        select: { contentId: true }
       }),
       prisma.like.findMany({
         where: {
           userId,
           contentType: "note",
-          noteId: { in: notes.map(n => n.id) }
+          contentId: { in: notes.map(n => n.id) }
         },
-        select: { noteId: true }
+        select: { contentId: true }
       }),
       prisma.like.findMany({
         where: {
           userId,
           contentType: "flashcard",
-          flashcardSetId: { in: flashcards.map(f => f.id) }
+          contentId: { in: flashcards.map(f => f.id) }
         },
-        select: { flashcardSetId: true }
+        select: { contentId: true }
       }),
       prisma.report.findMany({
         where: {
           userId,
           contentType: "note",
-          noteId: { in: notes.map(n => n.id) }
+          contentId: { in: notes.map(n => n.id) }
         },
-        select: { noteId: true }
+        select: { contentId: true }
       }),
       prisma.report.findMany({
         where: {
           userId,
           contentType: "flashcard",
-          flashcardSetId: { in: flashcards.map(f => f.id) }
+          contentId: { in: flashcards.map(f => f.id) }
         },
-        select: { flashcardSetId: true }
+        select: { contentId: true }
       })
     ])
 
-    const bookmarkedNoteIds = new Set(noteBookmarks.map(b => b.noteId))
-    const bookmarkedFlashcardIds = new Set(flashcardBookmarks.map(b => b.flashcardSetId))
-    const likedNoteIds = new Set(noteLikes.map(l => l.noteId))
-    const likedFlashcardIds = new Set(flashcardLikes.map(l => l.flashcardSetId))
-    const reportedNoteIds = new Set(noteReports.map(r => r.noteId))
-    const reportedFlashcardIds = new Set(flashcardReports.map(r => r.flashcardSetId))
+    const bookmarkedNoteIds = new Set(noteBookmarks.map(b => b.contentId))
+    const bookmarkedFlashcardIds = new Set(flashcardBookmarks.map(b => b.contentId))
+    const likedNoteIds = new Set(noteLikes.map(l => l.contentId))
+    const likedFlashcardIds = new Set(flashcardLikes.map(l => l.contentId))
+    const reportedNoteIds = new Set(noteReports.map(r => r.contentId))
+    const reportedFlashcardIds = new Set(flashcardReports.map(r => r.contentId))
 
     const notesWithFlags = notes.map(note => ({
       ...note,

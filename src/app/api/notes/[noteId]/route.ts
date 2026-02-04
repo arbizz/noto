@@ -19,10 +19,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ noteId:
       { status: 400 }
     )
 
-    const note = await prisma.note.findUnique({
+    const note = await prisma.content.findUnique({
       where: {
         id: noteId,
-        userId
+        userId,
+        contentType: 'note'
       }
     })
 
@@ -57,10 +58,11 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ note
     const userId = Number(session.user.id)
     const noteId = Number(id)
 
-    await prisma.note.delete({
+    await prisma.content.delete({
       where: {
         userId,
-        id: noteId
+        id: noteId,
+        contentType: 'note'
       }
     })
 
@@ -113,8 +115,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ noteId
       )
     }
 
-    const existingNote = await prisma.note.findUnique({
-      where: { id: noteId, userId }
+    const existingNote = await prisma.content.findUnique({
+      where: { 
+        id: noteId, 
+        userId,
+        contentType: 'note'
+      }
     })
 
     if (!existingNote) {
@@ -124,7 +130,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ noteId
       )
     }
 
-    const updatedNote = await prisma.note.update({
+    const updatedNote = await prisma.content.update({
       data: {
         title,
         description,
@@ -134,7 +140,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ noteId
       },
       where: {
         id: noteId,
-        userId
+        userId,
+        contentType: 'note'
       }
     })
 

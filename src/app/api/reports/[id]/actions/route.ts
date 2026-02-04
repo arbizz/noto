@@ -15,7 +15,7 @@ const PENALTY_AMOUNTS = {
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth()
@@ -38,7 +38,8 @@ export async function POST(
       )
     }
 
-    const [contentType, contentIdStr] = params.id.split("-")
+    const { id } = await params
+    const [contentType, contentIdStr] = id.split("-")
     const contentId = Number(contentIdStr)
 
     if (!["note", "flashcard"].includes(contentType) || isNaN(contentId)) {
@@ -55,9 +56,10 @@ export async function POST(
     }
 
     const reports = await prisma.report.findMany({
-      where: contentType === "note"
-        ? { noteId: contentId, contentType: "note" }
-        : { flashcardSetId: contentId, contentType: "flashcard" }
+      where: {
+        contentId: contentId,
+        contentType: contentType as "note" | "flashcard"
+      }
     })
 
     if (reports.length === 0) {
@@ -67,20 +69,15 @@ export async function POST(
       )
     }
 
-    let contentOwnerId: number | null = null
-    if (contentType === "note") {
-      const note = await prisma.note.findUnique({
-        where: { id: contentId },
-        select: { userId: true }
-      })
-      contentOwnerId = note?.userId ?? null
-    } else {
-      const flashcardSet = await prisma.flashcardSet.findUnique({
-        where: { id: contentId },
-        select: { userId: true }
-      })
-      contentOwnerId = flashcardSet?.userId ?? null
-    }
+    const content = await prisma.content.findUnique({
+      where: {
+        id: contentId,
+        contentType: contentType as "note" | "flashcard"
+      },
+      select: { userId: true }
+    })
+
+    const contentOwnerId = content?.userId
 
     if (!contentOwnerId) {
       return NextResponse.json(
@@ -92,9 +89,10 @@ export async function POST(
     switch (action) {
       case "set_reviewed":
         await prisma.report.updateMany({
-          where: contentType === "note"
-            ? { noteId: contentId, contentType: "note" }
-            : { flashcardSetId: contentId, contentType: "flashcard" },
+          where: {
+            contentId: contentId,
+            contentType: contentType as "note" | "flashcard"
+          },
           data: {
             status: "reviewed"
           }
@@ -103,8 +101,8 @@ export async function POST(
         const reporterNotifications = reports.map(report => ({
           userId: report.userId,
           type: "report_reviewed" as const,
-          title: "Report Sedang Ditinjau",
-          message: `Laporan Anda untuk ${contentType === "note" ? "catatan" : "flashcard"} sedang ditinjau oleh admin.`,
+          title: "Report Under Review",
+          message: `Your report for ${contentType === "note" ? "note" : "flashcard"} is being reviewed by admin.`,
           link: undefined
         }))
 
@@ -165,9 +163,10 @@ export async function POST(
         })
 
         await prisma.report.updateMany({
-          where: contentType === "note"
-            ? { noteId: contentId, contentType: "note" }
-            : { flashcardSetId: contentId, contentType: "flashcard" },
+          where: {
+            contentId: contentId,
+            contentType: contentType as "note" | "flashcard"
+          },
           data: {
             status: "resolved"
           }
@@ -176,16 +175,16 @@ export async function POST(
         await createNotification({
           userId: contentOwnerId,
           type: "score_reduced",
-          title: "Peringatan: Skor Dikurangi",
-          message: `Skor Anda dikurangi ${penaltyAmount} poin karena pelanggaran konten. Skor sekarang: ${newScore}.`,
+          title: "Warning: Score Reduced",
+          message: `Your score has been reduced by ${penaltyAmount} points due to content violation. Current score: ${newScore}.`,
           link: undefined
         })
-        // Notify reporters that issue is resolved
+
         const resolvedNotifications = reports.map(report => ({
           userId: report.userId,
           type: "report_resolved" as const,
-          title: "Laporan Diselesaikan",
-          message: `Terima kasih! Laporan Anda telah ditindaklanjuti oleh admin.`,
+          title: "Report Resolved",
+          message: `Thank you! Your report has been addressed by admin.`,
           link: undefined
         }))
         await createBulkNotifications(resolvedNotifications)
@@ -207,37 +206,35 @@ export async function POST(
 
       case "delete_content":
         await prisma.report.updateMany({
-          where: contentType === "note"
-            ? { noteId: contentId, contentType: "note" }
-            : { flashcardSetId: contentId, contentType: "flashcard" },
+          where: {
+            contentId: contentId,
+            contentType: contentType as "note" | "flashcard"
+          },
           data: {
             status: "resolved"
           }
         })
         
-        if (contentType === "note") {
-          await prisma.note.delete({
-            where: { id: contentId }
-          })
-        } else {
-          await prisma.flashcardSet.delete({
-            where: { id: contentId }
-          })
-        }
+        await prisma.content.delete({
+          where: {
+            id: contentId,
+            contentType: contentType as "note" | "flashcard"
+          }
+        })
 
         await createNotification({
           userId: contentOwnerId,
           type: "content_deleted",
-          title: "Konten Dihapus",
-          message: `${contentType === "note" ? "Catatan" : "Flashcard set"} Anda telah dihapus karena melanggar ketentuan.`,
+          title: "Content Deleted",
+          message: `Your ${contentType === "note" ? "note" : "flashcard set"} has been deleted due to violation of terms.`,
           link: undefined
         })
-        // Notify reporters
+
         const deletedNotifications = reports.map(report => ({
           userId: report.userId,
           type: "report_resolved" as const,
-          title: "Laporan Diselesaikan",
-          message: `Konten yang Anda laporkan telah dihapus. Terima kasih atas laporannya!`,
+          title: "Report Resolved",
+          message: `The content you reported has been deleted. Thank you for your report!`,
           link: undefined
         }))
         await createBulkNotifications(deletedNotifications)

@@ -57,14 +57,14 @@ export default function FlashcardUpdatePage() {
         setDescription(data.description ?? "")
         setCategory(data.category)
         setVisibility(data.visibility)
-        setFlashcards(data.flashcards)
+        setFlashcards(data.content)
 
         setInitialState({
           title: data.title,
           description: data.description ?? "",
           category: data.category,
           visibility: data.visibility,
-          flashcards: structuredClone(data.flashcards),
+          flashcards: structuredClone(data.content),
         })
       } catch (error) {
         console.error("Error fetching flashcard data:", error)
@@ -128,6 +128,15 @@ export default function FlashcardUpdatePage() {
 
   async function handleSave() {
     if (!dirty) return
+
+    const hasFilledCard = flashcards.some(card => 
+      card.front.trim().length > 0 || card.back.trim().length > 0
+    )
+
+    if (!hasFilledCard) {
+      toast.error("At least one flashcard must be filled")
+      return
+    }
 
     setIsSaving(true)
 
@@ -206,10 +215,11 @@ export default function FlashcardUpdatePage() {
           Back to View
         </Button>
 
-        <InputMetadata metadatas={metadatas} />
+        <InputMetadata metadatas={metadatas}/>
       </section>
 
       <section className="mt-12 space-y-4">
+      <p className="-mb-4">Your set  <strong className="text-red-500">*</strong></p>
         {flashcards.map((c, i) => {
           return (
             <div

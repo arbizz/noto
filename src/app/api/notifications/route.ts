@@ -2,7 +2,6 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextRequest, NextResponse } from "next/server"
 
-// GET - Fetch user's notifications
 export async function GET(req: NextRequest) {
   try {
     const session = await auth()
@@ -50,7 +49,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// PATCH - Mark notifications as read
 export async function PATCH(req: NextRequest) {
   try {
     const session = await auth()
@@ -88,7 +86,7 @@ export async function PATCH(req: NextRequest) {
       await prisma.notification.updateMany({
         where: {
           id: { in: notificationIds },
-          userId // Ensure user owns these notifications
+          userId
         },
         data: {
           isRead: true
