@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardFooter, CardAction } 
 import { Badge } from "../ui/badge"
 import { Button } from "../ui/button"
 import { 
-  DropdownMenu, 
+  DropdownMenu,
   DropdownMenuContent, 
   DropdownMenuItem,
   DropdownMenuSeparator,
@@ -22,6 +22,8 @@ function NFCard({
   onReport,
   showActions = false,
   showLikeOnly = false,
+  hideBadge = false,
+  hideLike = false,
   ...props
 }: {
   content: ContentWithExtras
@@ -31,6 +33,8 @@ function NFCard({
   onReport?: (e: React.MouseEvent) => void
   showActions?: boolean
   showLikeOnly?: boolean
+  hideBadge?: boolean,
+  hideLike?: boolean,
 }) {
   const likesCount = content._count?.likes ?? 0
   const isBookmarked = content.isBookmarked ?? false
@@ -118,30 +122,33 @@ function NFCard({
             {content.category.replaceAll("_", " ")}
           </Badge>
       
-          <Badge
-            variant="secondary"
-            className="flex items-center gap-1 capitalize"
-          >
-            <LucideEye className="h-3 w-3" />
-            {content.visibility}
-          </Badge>
+          {/* FIXED: Ubah dari hideBadge === true menjadi !hideBadge */}
+          {content.visibility === "public" && !hideBadge && (
+            <Badge
+              variant="secondary"
+              className="flex items-center gap-1 capitalize"
+            >
+              <LucideEye className="h-3 w-3" />
+              {content.visibility}
+            </Badge>
+          )}
         </div>
 
-        {content.visibility === "public" && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="icon" variant="ghost" onClick={showLikeOnly ? undefined : onLike}>
-                  <LucideHeart 
-                    className={`h-4 w-4 ${isLiked ? "fill-red-500 text-red-500" : ""}`} 
-                  />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <span className="text-xs font-medium">{likesCount}</span>
-              </TooltipContent>
-            </Tooltip>
-          )          
-        }
+        {/* FIXED: Ubah dari hideLike === true menjadi !hideLike */}
+        {content.visibility === "public" && !hideLike && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="icon" variant="ghost" onClick={showLikeOnly ? undefined : onLike}>
+                <LucideHeart 
+                  className={`h-4 w-4 ${isLiked ? "fill-red-500 text-red-500" : ""}`} 
+                />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <span className="text-xs font-medium">{likesCount}</span>
+            </TooltipContent>
+          </Tooltip>
+        )}
       </CardFooter>
     </Card>
   )

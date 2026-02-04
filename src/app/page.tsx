@@ -35,7 +35,7 @@ export default function LandingPage() {
                   Start Now
                 </Button>
               </Link>
-              <Link href="/discover">
+              <Link href="/explore">
                 <Button variant="outline" size="lg" className="h-11 px-8 rounded-full">
                   Explore Works
                 </Button>
