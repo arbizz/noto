@@ -1,3 +1,5 @@
+import { Suspense } from "react"
+
 export default function ExploreLayout({
   children,
 }: {
@@ -5,9 +7,15 @@ export default function ExploreLayout({
 }) {
   return (
     <>
-      <main className="p-8">
-        {children}
-      </main>
+      <Suspense fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      }>
+        <main className="p-8">
+          {children}
+        </main>
+      </Suspense>
     </>
   )
 }

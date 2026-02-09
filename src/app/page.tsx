@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Navbar } from "@/components/shared/Navbar"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { BookOpen, BrainCircuit, Globe, ShieldCheck, Sparkles, Users } from "lucide-react"
 import Image from "next/image"
@@ -146,7 +146,7 @@ export default function LandingPage() {
                 Ready to level up your learning?
               </h2>
               <p className="text-muted-foreground font-body max-w-150">
-                Join Noto now. It's free and easy to use.
+                Join Noto now. It&apos;s free and easy to use.
               </p>
               <Link href="/register">
                 <Button size="lg" className="mt-4 px-8 py-6 text-lg rounded-full">

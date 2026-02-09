@@ -4,7 +4,6 @@ import StarterKit from "@tiptap/starter-kit"
 import { EditorContent, JSONContent, useEditor } from "@tiptap/react"
 import { TiptapToolbar } from "@/components/user/TiptapToolbar"
 import { Separator } from "@/components/ui/separator"
-import { useEffect } from "react"
 
 function TiptapEditor({
   content,

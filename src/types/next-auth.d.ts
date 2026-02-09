@@ -1,4 +1,3 @@
-import NextAuth, { DefaultSession } from "next-auth"
 import { UserRole } from "@/generated/prisma/enums"
 
 declare module "next-auth" {

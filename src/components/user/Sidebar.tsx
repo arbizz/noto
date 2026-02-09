@@ -4,11 +4,10 @@ import Image from "next/image"
 import Link from "next/link"
 import { useState } from "react"
 import { Button } from "../ui/button"
-import { LucideBookmark, LucideGlobe, LucideHome, LucideLayers, LucideLogOut, LucidePanelLeft, LucideSquare, LucideStickyNote } from "lucide-react"
+import { LucideBookmark, LucideGlobe, LucideHome, LucideLayers, LucideLogOut, LucidePanelLeft, LucideStickyNote } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { usePathname } from "next/navigation"
 import { Separator } from "../ui/separator"
-import { NotificationBell } from "@/components/shared/NotificationBell"
 
 function UserSidebar() {
   const [isOpen, setIsOpen] = useState<boolean>(false)

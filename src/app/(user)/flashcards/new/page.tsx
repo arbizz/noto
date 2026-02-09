@@ -54,7 +54,7 @@ export default function NewFlashcardPage() {
     })
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLButtonElement>) {
+  async function handleSubmit() {
     const hasFilledCard = flashcards.some(card => 
       card.front.trim().length > 0 || card.back.trim().length > 0
     )
@@ -184,7 +184,7 @@ export default function NewFlashcardPage() {
           <LucidePlus className="w-5 h-5" />
           Add Card
         </Button>
-        <Button onClick={(e) => handleSubmit(e)} className="w-full">Save</Button>
+        <Button onClick={handleSubmit} className="w-full">Save</Button>
       </section>
     </>
   )

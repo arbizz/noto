@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
 import {
@@ -77,9 +77,9 @@ export default function AdminReportsPage() {
     return value === "asc" || value === "desc" ? value : "desc"
   })
 
-  function handleUpdateQuery(
+  const handleUpdateQuery = useCallback((
     paramsObj: Record<string, string | undefined>
-  ) {
+  ) => {
     const params = new URLSearchParams(searchParams.toString())
 
     for (const [key, value] of Object.entries(paramsObj)) {
@@ -91,7 +91,7 @@ export default function AdminReportsPage() {
     }
 
     router.push(`?${params.toString()}`)
-  }
+  }, [searchParams, router])
 
   function formatDate(date: Date) {
     return new Date(date).toLocaleDateString("id-ID", {
@@ -178,7 +178,7 @@ export default function AdminReportsPage() {
     }
 
     fetchData()
-  }, [searchParams])
+  }, [searchParams, handleUpdateQuery])
 
   const filters: FilterConfig[] = [
     {

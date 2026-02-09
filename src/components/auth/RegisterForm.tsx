@@ -38,8 +38,6 @@ export function RegisterForm() {
         body: JSON.stringify(data),
       })
 
-      const result = await res.json()
-
       if (!res.ok) {
         if (res.status === 409) {
           toast.error("Email already registered", {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ContentCategory } from "@/generated/prisma/enums"
 
@@ -14,28 +14,6 @@ import { LogIn, LucideArrowLeft } from "lucide-react"
 import { CategoryFilter } from "@/types/shared/filter"
 import { PaginationMeta } from "@/types/shared/pagination"
 import { ContentWithExtras } from "@/types/shared/nf_extras"
-
-// Simplified type without user interaction flags
-type ExploreContent = {
-  id: number
-  userId: number
-  contentType: "note" | "flashcard"
-  title: string
-  description: string | null
-  content: any
-  visibility: string
-  category: string
-  createdAt: Date | string
-  updatedAt: Date | string
-  user: {
-    id: number
-    name: string | null
-    image: string | null
-  }
-  _count: {
-    likes: number
-  }
-}
 
 export default function ExplorePage() {
   const router = useRouter()
@@ -68,7 +46,7 @@ export default function ExplorePage() {
     return typeParam === "card" ? "card" : "note"
   })
 
-  function handleUpdateQuery(paramsObj: Record<string, string | undefined>) {
+  const handleUpdateQuery = useCallback((paramsObj: Record<string, string | undefined>) => {
     const params = new URLSearchParams(searchParams.toString())
 
     for (const [key, value] of Object.entries(paramsObj)) {
@@ -80,7 +58,7 @@ export default function ExplorePage() {
     }
 
     router.push(`?${params.toString()}`)
-  }
+  }, [searchParams, router])
 
   useEffect(() => {
     async function fetchData() {
@@ -155,7 +133,7 @@ export default function ExplorePage() {
     }
 
     fetchData()
-  }, [searchParams])
+  }, [searchParams, type, handleUpdateQuery])
 
   const activePagination = type === "note" ? npagination : fpagination
 

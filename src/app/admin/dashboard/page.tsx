@@ -19,7 +19,6 @@ import {
   LucideUserCheck,
   LucideUserX,
   LucideEye,
-  LucideEyeOff,
   LucideClock,
   LucideShieldAlert
 } from "lucide-react"

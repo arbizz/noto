@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { use, useEffect, useState } from "react"
+import { use, useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, CheckCircle, Trash2, AlertTriangle } from "lucide-react"
+import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -107,11 +109,7 @@ export default function AdminReportDetailPage({
   const [actionLoading, setActionLoading] = useState(false)
   const [selectedPenalty, setSelectedPenalty] = useState<1 | 2 | 3>(1)
 
-  useEffect(() => {
-    fetchReport()
-  }, [resolvedParams.id])
-
-  async function fetchReport() {
+  const fetchReport = useCallback(async () => {
     setLoading(true)
     try {
       const res = await fetch(`/api/reports/${resolvedParams.id}`)
@@ -125,7 +123,11 @@ export default function AdminReportDetailPage({
     } finally {
       setLoading(false)
     }
-  }
+  }, [resolvedParams.id])
+
+  useEffect(() => {
+    fetchReport()
+  }, [fetchReport])
 
   async function handleAction(action: string, penaltyLevel?: 1 | 2 | 3) {
     setActionLoading(true)
@@ -276,11 +278,20 @@ export default function AdminReportDetailPage({
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
                         {r.user.image ? (
-                          <img 
-                            src={r.user.image} 
-                            alt={r.user.name}
-                            className="h-full w-full rounded-full object-cover"
-                          />
+                          <div className="relative h-10 w-10"> {/* Container harus relatif jika pakai fill */}
+                            <Image
+                              src={r.user.image}
+                              alt={r.user.name}
+                              fill
+                              className="rounded-full object-cover"
+                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                            />
+                          </div>
+                          // <img 
+                          //   src={r.user.image} 
+                          //   alt={r.user.name}
+                          //   className="h-full w-full rounded-full object-cover"
+                          // />
                         ) : (
                           <span className="text-lg font-medium">
                             {r.user.name.charAt(0).toUpperCase()}
@@ -389,11 +400,15 @@ export default function AdminReportDetailPage({
                     <div className="mt-2 flex items-center gap-3">
                       <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
                         {content.user.image ? (
-                          <img 
-                            src={content.user.image} 
-                            alt={content.user.name}
-                            className="h-full w-full rounded-full object-cover"
-                          />
+                          <div className="relative h-8 w-8"> {/* Container harus relatif jika pakai fill */}
+                            <Image
+                              src={content.user.image}
+                              alt={content.user.name}
+                              fill
+                              className="rounded-full object-cover"
+                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                            />
+                          </div>
                         ) : (
                           <span className="text-sm font-medium">
                             {content.user.name.charAt(0).toUpperCase()}
@@ -474,7 +489,7 @@ export default function AdminReportDetailPage({
                       <AlertDialogHeader>
                         <AlertDialogTitle>Apply Penalty?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This will reduce <strong>{content.user.name}</strong>'s score by{" "}
+                          This will reduce <strong>{content.user.name}</strong>&apos;s score by{" "}
                           <strong>{PENALTY_LEVELS[selectedPenalty].points} points</strong> ({PENALTY_LEVELS[selectedPenalty].label}).
                           <br /><br />
                           Current score: <strong>{content.user.score}</strong><br />

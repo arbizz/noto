@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { LucidePlus } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
@@ -34,9 +34,9 @@ export default function NotesPage() {
     return value === "asc" || value === "desc" ? value : "desc"
   })
 
-  function handleUpdateQuery(
+  const handleUpdateQuery = useCallback((
     paramsObj: Record<string, string | undefined>
-  ) {
+  ) => {
     const params = new URLSearchParams(searchParams.toString())
 
     for (const [key, value] of Object.entries(paramsObj)) {
@@ -48,7 +48,7 @@ export default function NotesPage() {
     }
 
     router.push(`?${params.toString()}`)
-  }
+  }, [searchParams, router])
 
   useEffect(() => {
     async function fetchData() {
@@ -93,7 +93,7 @@ export default function NotesPage() {
     }
 
     fetchData()
-  }, [searchParams])
+  }, [searchParams, handleUpdateQuery])
 
   const filters: FilterConfig[] = [
     {

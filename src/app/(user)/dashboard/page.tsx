@@ -177,12 +177,11 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <div className="divide-y">
-                    {dashboardData.recents.notes.map((note, index) => (
+                    {dashboardData.recents.notes.map((note) => (
                       <RecentItemCard
                         key={note.id}
                         item={note}
                         type="note"
-                        isLast={index === dashboardData.recents.notes.length - 1}
                       />
                     ))}
                   </div>
@@ -218,12 +217,11 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <div className="divide-y">
-                    {dashboardData.recents.flashcards.map((flashcard, index) => (
+                    {dashboardData.recents.flashcards.map((flashcard) => (
                       <RecentItemCard
                         key={flashcard.id}
                         item={flashcard}
                         type="flashcard"
-                        isLast={index === dashboardData.recents.flashcards.length - 1}
                       />
                     ))}
                   </div>
@@ -325,12 +323,10 @@ function StatCard({
 // Recent Item Card Component
 function RecentItemCard({ 
   item, 
-  type,
-  isLast 
+  type
 }: { 
   item: RecentItem
   type: "note" | "flashcard"
-  isLast: boolean
 }) {
   const href = type === "note" ? `/notes/${item.id}` : `/flashcards/${item.id}`
   const Icon = type === "note" ? LucideFileText : LucideSquareStack

@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { ReportStatus, UserStatus } from "@/generated/prisma/enums"
+import { UserStatus } from "@/generated/prisma/enums"
 import { NextRequest, NextResponse } from "next/server"
 import { createNotification, createBulkNotifications } from "@/lib/notifications"
 

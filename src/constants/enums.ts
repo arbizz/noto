@@ -1,4 +1,4 @@
-import { ContentCategory, Visibility, ReportReason, ReportStatus } from "@/generated/prisma/enums"
+import { ContentCategory, ReportReason, ReportStatus } from "@/generated/prisma/enums"
 
 export const categoryOptions = [
   { value: ContentCategory.mathematics, label: "Mathematics" },

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ContentCategory, ReportReason } from "@/generated/prisma/enums"
 
@@ -60,7 +60,7 @@ export default function BookmarksPage() {
     return typeParam === "card" ? "card" : "note"
   })
 
-  function handleUpdateQuery(paramsObj: Record<string, string | undefined>) {
+  const handleUpdateQuery = useCallback((paramsObj: Record<string, string | undefined>) => {
     const params = new URLSearchParams(searchParams.toString())
 
     for (const [key, value] of Object.entries(paramsObj)) {
@@ -72,7 +72,7 @@ export default function BookmarksPage() {
     }
 
     router.push(`?${params.toString()}`)
-  }
+  }, [searchParams, router])
 
   async function handleToggleBookmark(
     contentId: number,
@@ -340,7 +340,7 @@ export default function BookmarksPage() {
     }
 
     fetchData()
-  }, [searchParams])
+  }, [searchParams, type, handleUpdateQuery])
 
   const activePagination = type === "note" ? npagination : fpagination
 

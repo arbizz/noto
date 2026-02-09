@@ -52,6 +52,7 @@ export function LoginForm() {
       toast.error("An error occurred", {
         description: "Please try again"
       })
+      console.error(error)
       setIsLoading(false)
     }
   }
