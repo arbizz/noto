@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Noto
 
-## Getting Started
+**Record, Learn, and Share Your Knowledge.**
 
-First, run the development server:
+Noto is a modern learning platform designed for students and teachers. It allows you to create structured notes, interactive flashcards, and share your knowledge with a global community.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+![Banner](public/banner.png)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🚀 Key Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Rich Text Notes**: Create structured notes with an advanced editor (Tiptap). Supports rich formatting for Mathematics, Science, and more.
+- **Smart Flashcards**: Turn difficult concepts into interactive study cards for efficient memorization.
+- **Share & Discover**: Publish your materials to the community or discover works from others.
+- **Reputation System**: Earn scores and badges for high-quality contributions.
+- **Personal Collection**: Bookmark and organize your favorite materials.
+- **Safe Environment**: Built-in moderation and reporting system to ensure content quality and safety.
+- **Dark Mode**: Fully supported using `next-themes`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠️ Tech Stack
 
-## Learn More
+- **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/), [Radix UI](https://www.radix-ui.com/), [Lucide React](https://lucide.dev/)
+- **Database**: [Prisma ORM](https://www.prisma.io/) (MySQL/MariaDB)
+- **Authentication**: [NextAuth.js v5](https://authjs.dev/)
+- **Forms & Validation**: [React Hook Form](https://react-hook-form.com/), [Zod](https://zod.dev/)
+- **Rich Text Editor**: [Tiptap](https://tiptap.dev/)
 
-To learn more about Next.js, take a look at the following resources:
+## 🏁 Getting Started
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Prerequisites
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Node.js (v18+ recommended)
+- MySQL or MariaDB database
 
-## Deploy on Vercel
+### Installation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. **Clone the repository:**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+   ```bash
+   git clone https://github.com/yourusername/noto.git
+   cd noto
+   ```
+
+2. **Install dependencies:**
+
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables:**
+
+   Create a `.env` file in the root directory and add the necessary variables (refer to `.env.example` if available).
+
+   ```env
+   DATABASE_URL="mysql://user:password@localhost:3306/noto"
+   AUTH_SECRET="your-auth-secret"
+   # Add other required variables...
+   ```
+
+4. **Setup Database:**
+
+   ```bash
+   npx prisma generate
+   npx prisma db push
+   ```
+
+5. **Run the development server:**
+
+   ```bash
+   npm run dev
+   ```
+
+   Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## 📂 Project Structure
+
+- `src/app`: Application routes and pages.
+- `src/components`: Reusable UI components.
+- `src/lib`: Utility functions and libraries.
+- `prisma`: Database schema and migrations.
+- `public`: Static assets.
+
+## 📄 License
+
+[MIT](LICENSE)
