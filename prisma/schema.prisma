@@ -12,10 +12,9 @@ datasource db {
 
 model User {
   id             Int         @id @default(autoincrement())
-  name           String      @db.VarChar(50)
+  name           String?     @db.VarChar(50)
   email          String      @unique @db.VarChar(100)
   emailVerified  DateTime?
-  password       String?     @db.VarChar(255) // Optional for OAuth users
   image          String?
   role           UserRole    @default(user)
   status         UserStatus  @default(active)
@@ -52,6 +51,15 @@ model Account {
 
   @@unique([provider, providerAccountId])
   @@map("accounts")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
 }
 
 model Content {

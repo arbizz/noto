@@ -1,7 +1,6 @@
 import NextAuth from "next-auth"
-import Credentials from "next-auth/providers/credentials"
 import Google from "next-auth/providers/google"
-import bcrypt from "bcryptjs"
+import Resend from "next-auth/providers/resend"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
 import { UserRole } from "@/generated/prisma/enums"
@@ -12,78 +11,50 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     strategy: "jwt",
   },
   providers: [
-    Credentials({
-      async authorize(credentials) {
-        if (!credentials.email || !credentials.password) {
-          return null
-        }
-
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            password: true,
-            role: true,
-            status: true
-          }
-        })
-
-        if (!user?.password) {
-          return null
-        }
-
-        if (user.status !== "active") {
-          return null
-        }
-
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password as string,
-          user.password
-        )
-        if (!isPasswordValid) {
-          return null
-        }
-
-        return {
-          id: (user.id).toString(),
-          name: user.name,
-          email: user.email,
-          role: user.role
-        }
-      }
-    }),
     Google({
       clientId: process.env.AUTH_GOOGLE_ID!,
       clientSecret: process.env.AUTH_GOOGLE_SECRET!,
-      allowDangerousEmailAccountLinking: false,
+      allowDangerousEmailAccountLinking: true,
+    }),
+    Resend({
+      apiKey: process.env.AUTH_RESEND_KEY!,
+      from: process.env.AUTH_RESEND_EMAIL_FROM!,
     })
   ],
   callbacks: {
-    async signIn({ user, account }) {
-      if (account?.provider === "google") {
-        const existingUser = await prisma.user.findUnique({
+    async signIn({ user }) {
+      const existingUser = await prisma.user.findUnique({
+        where: { email: user.email! },
+        select: { status: true, role: true }
+      })
+
+      if (!existingUser) {
+        return true
+      }
+
+      if (existingUser.status !== "active") {
+        return false
+      }
+
+      if (user.email === process.env.ADMIN_EMAIL && existingUser.role !== UserRole.admin) {
+        await prisma.user.update({
           where: { email: user.email! },
-          select: { status: true }
+          data: { role: UserRole.admin }
         })
-
-        if (!existingUser) {
-          return true
-        }
-
-        if (existingUser?.status !== "active") {
-          return false
-        }
       }
 
       return true
     },
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id
-        token.role = user.role
-        token.name = user.name
+        const dbUser = await prisma.user.findUnique({
+          where: { email: user.email! },
+          select: { id: true, role: true, name: true }
+        })
+
+        token.id = dbUser?.id || user.id
+        token.role = dbUser?.role || user.role
+        token.name = dbUser?.name || user.name
       }
       return token
     },
@@ -98,6 +69,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   pages: {
     signIn: "/login",
-    error: "/login"
+    error: "/login",
+    verifyRequest: "/verify-request"
   },
 })

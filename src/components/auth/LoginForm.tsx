@@ -1,8 +1,7 @@
 "use client"
 
 import * as z from "zod"
-import Link from "next/link"
-import { loginSchema } from "@/lib/validations/auth"
+import { magicLinkSchema } from "@/lib/validations/auth"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { signIn } from "next-auth/react"
@@ -10,44 +9,44 @@ import { Field, FieldError, FieldGroup, FieldLabel } from "../ui/field"
 import { Input } from "../ui/input"
 import { Button } from "../ui/button"
 import { useState } from "react"
-import { LucideEye, LucideEyeOff } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { FcGoogle } from "react-icons/fc"
+import { Mail } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export function LoginForm() {
-  const [showPass, setShowPass] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const router = useRouter()
 
-  const form = useForm<z.infer<typeof loginSchema>>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm<z.infer<typeof magicLinkSchema>>({
+    resolver: zodResolver(magicLinkSchema),
     mode: "onChange",
     defaultValues: {
       email: "",
-      password: "",
     }
   })
 
-  async function onSubmit(data: z.infer<typeof loginSchema>) {
+  async function onSubmit(data: z.infer<typeof magicLinkSchema>) {
     setIsLoading(true)
     
     try {
-      const res = await signIn("credentials", {
-        ...data,
-        redirect: false
+      const res = await signIn("resend", {
+        email: data.email,
+        redirect: false,
+        callbackUrl: "/dashboard"
       })
     
       if (res?.error) {
-        toast.error("Invalid credentials", {
-          description: "Check your email and password"
+        toast.error("Failed to send magic link", {
+          description: "Please try again"
         })
         setIsLoading(false)
         return
       }
 
-      toast.success("Sign in success")
-      router.push("/dashboard")
+      router.push(`/verify-request?email=${encodeURIComponent(data.email)}`)
+      
     } catch (error) {
       toast.error("An error occurred", {
         description: "Please try again"
@@ -57,13 +56,26 @@ export function LoginForm() {
     }
   }
 
+  async function handleGoogleSignIn() {
+    setIsGoogleLoading(true)
+    try {
+      await signIn("google", {
+        callbackUrl: "/dashboard"
+      })
+    } catch (error) {
+      toast.error("Failed to sign in with Google")
+      console.error(error)
+      setIsGoogleLoading(false)
+    }
+  }
+
   return (
     <>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="flex flex-col gap-8"
+        className="flex flex-col gap-4"
       >
-        <FieldGroup className="flex flex-col gap-5">
+        <FieldGroup>
           <Controller
             name="email"
             control={form.control}
@@ -87,68 +99,33 @@ export function LoginForm() {
               </Field>
             )}
           />
-          <Controller
-            name="password"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor="password" className="ml-1">Password</FieldLabel>
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex gap-3">
-                    <Input
-                      {...field}
-                      id="password"
-                      type={showPass ? "text" : "password"}
-                      aria-invalid={fieldState.invalid}
-                      placeholder="••••••••"
-                      autoComplete="current-password"
-                      disabled={isLoading}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setShowPass(!showPass)}
-                      className="shrink-0 text-secondary-foreground"
-                      disabled={isLoading}
-                    >
-                      {showPass ? <LucideEye size={20} /> : <LucideEyeOff size={20} />}
-                    </Button>
-                  </div>
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} className="ml-1" />
-                  )}
-                </div>
-              </Field>
-            )}
-          />
         </FieldGroup>
+        
         <div className="flex flex-col gap-4 text-center">
-          <small className="text-muted-foreground">
-            Don&apos;t have an account?{" "}
-            <Link href="/register" className="font-semibold text-foreground hover:underline">
-              Create one
-            </Link>
-          </small>
           <Button 
             type="submit" 
-            disabled={isLoading}
+            disabled={isLoading || isGoogleLoading}
+            className="flex items-center gap-2"
           >
-            {isLoading ? "Signing in..." : "Sign in"}
+            <Mail size={18} />
+            {isLoading ? "Sending magic link..." : "Sign in with Email"}
           </Button>
+          
           <div className="flex items-center gap-3">
             <span className="flex-1 h-px bg-border" />
             <small className="text-muted-foreground">or</small>
             <span className="flex-1 h-px bg-border" />
           </div>
+          
           <Button 
             type="button"
             variant="outline"
-            onClick={() => signIn("google")}
+            onClick={handleGoogleSignIn}
             className="flex items-center gap-2"
-            disabled={isLoading}
+            disabled={isLoading || isGoogleLoading}
           >
             <FcGoogle />
-            Sign in with Google
+            {isGoogleLoading ? "Signing in..." : "Sign in with Google"}
           </Button>
         </div>
       </form>

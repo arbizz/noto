@@ -30,7 +30,7 @@ export default function LandingPage() {
               Join the community of learners and improve your learning score today.
             </p>
             <div className="space-x-4">
-              <Link href="/register">
+              <Link href="/login">
                 <Button size="lg" className="h-11 px-8 rounded-full font-semibold">
                   Start Now
                 </Button>
@@ -148,7 +148,7 @@ export default function LandingPage() {
               <p className="text-muted-foreground font-body max-w-150">
                 Join Noto now. It&apos;s free and easy to use.
               </p>
-              <Link href="/register">
+              <Link href="/login">
                 <Button size="lg" className="mt-4 px-8 py-6 text-lg rounded-full">
                   Join
                 </Button>
