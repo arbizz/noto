@@ -384,7 +384,7 @@ export default function AdminDashboard() {
                       <TableRow>
                         <TableHead>User</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Content</TableHead>
+                        {/* <TableHead>Content</TableHead> */}
                         <TableHead>Joined</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -400,12 +400,12 @@ export default function AdminDashboard() {
                           <TableCell>
                             {getStatusBadge(user.status)}
                           </TableCell>
-                          <TableCell>
+                          {/* <TableCell>
                             <div className="text-sm">
                               <div>{user._count.notes} notes</div>
                               <div className="text-muted-foreground">{user._count.flashcardSets} flashcards</div>
                             </div>
-                          </TableCell>
+                          </TableCell> */}
                           <TableCell className="text-sm text-muted-foreground">
                             {new Date(user.createdAt).toLocaleDateString()}
                           </TableCell>

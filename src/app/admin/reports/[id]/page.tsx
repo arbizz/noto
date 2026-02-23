@@ -166,7 +166,7 @@ export default function AdminReportDetailPage({
   }
 
   function formatDate(date: Date) {
-    return new Date(date).toLocaleDateString("id-ID", {
+    return new Date(date).toLocaleDateString("en-EN", {
       day: "numeric",
       month: "long",
       year: "numeric",
@@ -278,7 +278,7 @@ export default function AdminReportDetailPage({
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
                         {r.user.image ? (
-                          <div className="relative h-10 w-10"> {/* Container harus relatif jika pakai fill */}
+                          <div className="relative h-10 w-10">
                             <Image
                               src={r.user.image}
                               alt={r.user.name}
@@ -287,11 +287,6 @@ export default function AdminReportDetailPage({
                               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                             />
                           </div>
-                          // <img 
-                          //   src={r.user.image} 
-                          //   alt={r.user.name}
-                          //   className="h-full w-full rounded-full object-cover"
-                          // />
                         ) : (
                           <span className="text-lg font-medium">
                             {r.user.name.charAt(0).toUpperCase()}
@@ -502,7 +497,7 @@ export default function AdminReportDetailPage({
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => handleAction("reduce_score", selectedPenalty)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          variant="destructive"
                         >
                           Apply Penalty
                         </AlertDialogAction>
@@ -536,7 +531,7 @@ export default function AdminReportDetailPage({
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => handleAction("delete_content")}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          variant="destructive"
                         >
                           Delete
                         </AlertDialogAction>

@@ -82,12 +82,12 @@ export function NotificationBell() {
     const diffHours = Math.floor(diffMs / 3600000)
     const diffDays = Math.floor(diffMs / 86400000)
 
-    if (diffMins < 1) return "Baru saja"
-    if (diffMins < 60) return `${diffMins} menit lalu`
-    if (diffHours < 24) return `${diffHours} jam lalu`
-    if (diffDays < 7) return `${diffDays} hari lalu`
+    if (diffMins < 1) return "Just now"
+    if (diffMins < 60) return `${diffMins} minutes ago`
+    if (diffHours < 24) return `${diffHours} hours ago`
+    if (diffDays < 7) return `${diffDays} days ago`
     
-    return date.toLocaleDateString("id-ID", { 
+    return date.toLocaleDateString("en-EN", { 
       day: "numeric", 
       month: "short" 
     })
@@ -135,7 +135,7 @@ export function NotificationBell() {
         sideOffset={8}
       >
         <div className="flex items-center justify-between p-3 border-b">
-          <h4 className="font-semibold">Notifikasi</h4>
+          <h4 className="font-semibold">Notifications</h4>
           {unreadCount > 0 && (
             <Button 
               variant="ghost" 
@@ -144,7 +144,7 @@ export function NotificationBell() {
               className="text-xs h-auto py-1 px-2"
             >
               <LucideCheck className="w-3 h-3 mr-1" />
-              Tandai semua dibaca
+              Marked all reads
             </Button>
           )}
         </div>
@@ -156,7 +156,7 @@ export function NotificationBell() {
             </div>
           ) : notifications.length === 0 ? (
             <div className="p-6 text-center text-muted-foreground text-sm">
-              Tidak ada notifikasi
+              No notifications
             </div>
           ) : (
             notifications.map((notification) => (

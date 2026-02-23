@@ -342,10 +342,10 @@ export default function DiscoverDetailPage() {
               </Button>
 
               <Button
-                variant={"default"}
+                variant={"outline"}
                 size="sm"
                 onClick={handleToggleLike}
-                className={content.isLiked ? "bg-red-600" : ""}
+                className={content.isLiked ? "hover:bg-red-600 bg-red-600 text-white hover:text-white" : ""}
               >
                 <Heart 
                   className={`h-4 w-4 mr-2 ${content.isLiked ? "fill-current" : ""}`} 

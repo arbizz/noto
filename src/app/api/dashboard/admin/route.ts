@@ -32,7 +32,13 @@ export async function GET() {
       publicNotes,
       publicFlashcards
     ] = await Promise.all([
-      prisma.user.count(),
+      prisma.user.count({
+        where: {
+          NOT: {
+            role: "admin"
+          }
+        }
+      }),
       
       prisma.content.count({
         where: { contentType: 'note' }
@@ -49,15 +55,30 @@ export async function GET() {
       }),
       
       prisma.user.count({
-        where: { status: "active" }
+        where: {
+          status: "active",
+          NOT: {
+            role: "admin"
+          }
+        }
       }),
       
       prisma.user.count({
-        where: { status: "suspended" }
+        where: {
+          status: "suspended",
+          NOT: {
+            role: "admin"
+          }
+        }
       }),
       
       prisma.user.count({
-        where: { status: "banned" }
+        where: {
+          status: "banned",
+          NOT: {
+            role: "admin"
+          }
+        }
       }),
       
       prisma.content.count({
@@ -125,6 +146,11 @@ export async function GET() {
       },
       orderBy: {
         createdAt: 'desc'
+      },
+      where: {
+        NOT: {
+          role: "admin"
+        }
       },
       take: 5
     })

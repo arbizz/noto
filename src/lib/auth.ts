@@ -25,22 +25,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async signIn({ user }) {
       const existingUser = await prisma.user.findUnique({
         where: { email: user.email! },
-        select: { status: true, role: true }
+        select: { status: true }
       })
 
-      if (!existingUser) {
-        return true
-      }
-
-      if (existingUser.status !== "active") {
+      if (existingUser && existingUser.status !== "active") {
         return false
-      }
-
-      if (user.email === process.env.ADMIN_EMAIL && existingUser.role !== UserRole.admin) {
-        await prisma.user.update({
-          where: { email: user.email! },
-          data: { role: UserRole.admin }
-        })
       }
 
       return true
@@ -52,8 +41,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           select: { id: true, role: true, name: true }
         })
 
+        const isAdminEmail = user.email === process.env.ADMIN_EMAIL
+        const currentRole = dbUser?.role
+
+        if (isAdminEmail && currentRole !== UserRole.admin) {
+          await prisma.user.update({
+            where: { email: user.email! },
+            data: { role: UserRole.admin }
+          })
+          token.role = UserRole.admin
+        } else {
+          token.role = currentRole
+        }
+
         token.id = dbUser?.id || user.id
-        token.role = dbUser?.role || user.role
         token.name = dbUser?.name || user.name
       }
       return token

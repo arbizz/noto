@@ -4,7 +4,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useState } from "react"
 import { Button } from "../ui/button"
-import { LucideLogOut, LucidePanelLeft, LucideSquare } from "lucide-react"
+import { LucideAlertTriangle, LucideHome, LucideLogOut, LucidePanelLeft, LucideSquare, LucideUser } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { usePathname } from "next/navigation"
 import { Separator } from "../ui/separator"
@@ -35,10 +35,13 @@ function AdminSidebar() {
           <Separator />
           <nav className="flex flex-col items-center justify-center p-3 gap-2">
             <SidebarLink href="/admin/dashboard" label="Dashboard">
-              <LucideSquare size={24} className="size-fit" />
+              <LucideHome size={24} className="size-fit" />
             </SidebarLink>
             <SidebarLink href="/admin/reports" label="Reports">
-              <LucideSquare size={24} className="size-fit" />
+              <LucideAlertTriangle size={24} className="size-fit" />
+            </SidebarLink>
+            <SidebarLink href="/admin/users" label="Users">
+              <LucideUser size={24} className="size-fit" />
             </SidebarLink>
           </nav>
         </div>
