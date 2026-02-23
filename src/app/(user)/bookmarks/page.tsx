@@ -12,7 +12,7 @@ import { FilterConfig, InputFilter } from "@/components/shared/InputFilter"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { CategoryFilter } from "@/types/shared/filter"
-import { ContentWithExtras } from "@/types/shared/nf_extras"
+import { ContentWithExtras } from "@/types/shared/nf-extras"
 import { PaginationMeta } from "@/types/shared/pagination"
 
 type ReportDialogState = {

@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { CategoryFilter } from "@/types/shared/filter"
 import { PaginationMeta } from "@/types/shared/pagination"
-import { ContentWithExtras } from "@/types/shared/nf_extras"
+import { ContentWithExtras } from "@/types/shared/nf-extras"
 
 type ReportDialogState = {
   open: boolean

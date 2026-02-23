@@ -21,7 +21,7 @@ import {
   LucideRepeat
 } from "lucide-react"
 
-import { ContentWithExtras } from "@/types/shared/nf_extras"
+import { ContentWithExtras } from "@/types/shared/nf-extras"
 import { TiptapEditor } from "@/components/user/TiptapEditor"
 import { JSONContent } from "@tiptap/core"
 import { cn } from "@/lib/utils"

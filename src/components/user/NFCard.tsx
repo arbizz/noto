@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger 
 } from "../ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip"
-import { ContentWithExtras } from "@/types/shared/nf_extras"
+import { ContentWithExtras } from "@/types/shared/nf-extras"
 
 function NFCard({
   content,

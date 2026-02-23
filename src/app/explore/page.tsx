@@ -13,7 +13,7 @@ import { LogIn, LucideArrowLeft } from "lucide-react"
 
 import { CategoryFilter } from "@/types/shared/filter"
 import { PaginationMeta } from "@/types/shared/pagination"
-import { ContentWithExtras } from "@/types/shared/nf_extras"
+import { ContentWithExtras } from "@/types/shared/nf-extras"
 
 export default function ExplorePage() {
   const router = useRouter()

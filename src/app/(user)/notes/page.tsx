@@ -11,7 +11,7 @@ import { PagePagination } from "@/components/shared/PagePagination"
 import { FilterConfig, InputFilter } from "@/components/shared/InputFilter"
 
 import { PaginationMeta } from "@/types/shared/pagination"
-import { ContentWithExtras } from "@/types/shared/nf_extras"
+import { ContentWithExtras } from "@/types/shared/nf-extras"
 import { CategoryFilter, VisibilityFilter } from "@/types/shared/filter"
 
 export default function NotesPage() {
