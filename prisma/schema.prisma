@@ -18,6 +18,7 @@ model User {
   image          String?
   role           UserRole    @default(user)
   status         UserStatus  @default(active)
+  suspendedUntil DateTime?   @map("suspended_until")
   score          Int         @default(100)
   createdAt      DateTime    @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP")) @map("created_at")
   updatedAt      DateTime    @db.Timestamp(0) @default(dbgenerated("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")) @map("updated_at")

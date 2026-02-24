@@ -25,7 +25,7 @@ export async function GET(
         { error: "Forbidden - Admin access required" },
         { status: 403 }
       )
-    }
+    }   
 
     const { id } = await params
     const [contentType, contentIdStr] = id.split("-")

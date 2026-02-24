@@ -12,7 +12,7 @@ export default function ExploreLayout({
           <p className="text-muted-foreground">Loading...</p>
         </div>
       }>
-        <main className="p-8">
+        <main className="p-12">
           {children}
         </main>
       </Suspense>

@@ -37,7 +37,11 @@ export async function POST(
     }
 
     const body = await req.json()
-    const { action, reason } = body as { action: ActionType; reason?: string }
+    const { action, reason, duration } = body as {
+      action: ActionType
+      reason?: string
+      duration?: number // days (for suspend)
+    }
 
     const targetUser = await prisma.user.findUnique({
       where: { id: userId },
@@ -54,9 +58,18 @@ export async function POST(
 
     switch (action) {
       case "ban": {
+        // Cannot ban an already banned user
+        if (targetUser.status === "banned") {
+          return NextResponse.json({ error: "User is already banned" }, { status: 400 })
+        }
+
+        // Ban is permanent — suspendedUntil is null
         const updated = await prisma.user.update({
           where: { id: userId },
-          data: { status: "banned" },
+          data: {
+            status: "banned",
+            suspendedUntil: null
+          },
           select: { id: true, name: true, email: true, status: true },
         })
 
@@ -77,10 +90,26 @@ export async function POST(
       }
 
       case "suspend": {
+        // Cannot suspend a banned user (downgrade) or already suspended user
+        if (targetUser.status === "banned") {
+          return NextResponse.json({ error: "Cannot suspend a banned user. Use activate first." }, { status: 400 })
+        }
+        if (targetUser.status === "suspended") {
+          return NextResponse.json({ error: "User is already suspended" }, { status: 400 })
+        }
+
+        // Suspend with duration — default 7 days
+        const suspendDays = duration && duration > 0 ? duration : 7
+        const suspendedUntil = new Date()
+        suspendedUntil.setDate(suspendedUntil.getDate() + suspendDays)
+
         const updated = await prisma.user.update({
           where: { id: userId },
-          data: { status: "suspended" },
-          select: { id: true, name: true, email: true, status: true },
+          data: {
+            status: "suspended",
+            suspendedUntil
+          },
+          select: { id: true, name: true, email: true, status: true, suspendedUntil: true },
         })
 
         await createNotification({
@@ -88,21 +117,26 @@ export async function POST(
           type: "score_reduced",
           title: "Account Suspended",
           message: reason
-            ? `Your account has been suspended. Reason: ${reason}`
-            : "Your account has been suspended temporarily.",
+            ? `Your account has been suspended for ${suspendDays} days. Reason: ${reason}`
+            : `Your account has been suspended for ${suspendDays} days.`,
           link: undefined,
         })
 
         return NextResponse.json({
-          message: "User suspended successfully",
+          message: `User suspended for ${suspendDays} days`,
           user: updated,
+          suspendedUntil,
         })
       }
 
       case "activate": {
+        // Activate — clear suspendedUntil
         const updated = await prisma.user.update({
           where: { id: userId },
-          data: { status: "active" },
+          data: {
+            status: "active",
+            suspendedUntil: null
+          },
           select: { id: true, name: true, email: true, status: true },
         })
 

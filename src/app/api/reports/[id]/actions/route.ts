@@ -4,7 +4,7 @@ import { UserStatus } from "@/generated/prisma/enums"
 import { NextRequest, NextResponse } from "next/server"
 import { createNotification, createBulkNotifications } from "@/lib/notifications"
 
-type ActionType = "set_reviewed" | "delete_content" | "reduce_score"
+type ActionType = "set_reviewed" | "set_rejected" | "delete_content" | "reduce_score"
 type PenaltyLevel = 1 | 2 | 3
 
 const PENALTY_AMOUNTS = {
@@ -12,6 +12,15 @@ const PENALTY_AMOUNTS = {
   2: 15,
   3: 25
 } as const
+
+function getStatusFromScore(currentStatus: UserStatus, score: number): UserStatus {
+  // Never auto-downgrade status — only escalate
+  if (currentStatus === "banned") return "banned"
+  if (score <= 15) return "banned"
+  if (currentStatus === "suspended") return "suspended"
+  if (score <= 30) return "suspended"
+  return "active"
+}
 
 export async function POST(
   req: NextRequest,
@@ -69,6 +78,8 @@ export async function POST(
       )
     }
 
+    // ✅ Fix #3: contentOwnerId hanya diambil di sini, validasinya dipindah ke dalam
+    // case yang membutuhkannya saja (reduce_score & delete_content), bukan di atas switch.
     const content = await prisma.content.findUnique({
       where: {
         id: contentId,
@@ -79,44 +90,79 @@ export async function POST(
 
     const contentOwnerId = content?.userId
 
-    if (!contentOwnerId) {
-      return NextResponse.json(
-        { error: "Content or content owner not found" },
-        { status: 404 }
-      )
-    }
-
     switch (action) {
-      case "set_reviewed":
-        await prisma.report.updateMany({
+      case "set_reviewed": {
+        const updatedCount = await prisma.report.updateMany({
           where: {
             contentId: contentId,
-            contentType: contentType as "note" | "flashcard"
+            contentType: contentType as "note" | "flashcard",
+            status: "pending"
           },
           data: {
             status: "reviewed"
           }
         })
 
-        const reporterNotifications = reports.map(report => ({
+        const pendingReports = reports.filter(r => r.status === "pending")
+        if (pendingReports.length > 0) {
+          const reporterNotifications = pendingReports.map(report => ({
+            userId: report.userId,
+            type: "report_reviewed" as const,
+            title: "Report Under Review",
+            message: `Your report for ${contentType === "note" ? "note" : "flashcard"} is being reviewed by admin.`,
+            link: undefined
+          }))
+
+          await createBulkNotifications(reporterNotifications)
+        }
+
+        return NextResponse.json(
+          {
+            message: "Pending reports marked as reviewed",
+            totalUpdated: updatedCount.count
+          },
+          { status: 200 }
+        )
+      }
+
+      case "set_rejected": {
+        await prisma.report.updateMany({
+          where: {
+            contentId: contentId,
+            contentType: contentType as "note" | "flashcard"
+          },
+          data: {
+            status: "rejected"
+          }
+        })
+
+        const rejectedNotifications = reports.map(report => ({
           userId: report.userId,
           type: "report_reviewed" as const,
-          title: "Report Under Review",
-          message: `Your report for ${contentType === "note" ? "note" : "flashcard"} is being reviewed by admin.`,
+          title: "Report Rejected",
+          message: `Your report for this ${contentType} has been reviewed and found to not violate our guidelines.`,
           link: undefined
         }))
 
-        await createBulkNotifications(reporterNotifications)
+        await createBulkNotifications(rejectedNotifications)
 
         return NextResponse.json(
-          { 
-            message: "All reports marked as reviewed",
+          {
+            message: "All reports marked as rejected",
             totalUpdated: reports.length
           },
           { status: 200 }
         )
+      }
 
-      case "reduce_score":
+      case "reduce_score": {
+        if (!contentOwnerId) {
+          return NextResponse.json(
+            { error: "Content or content owner not found" },
+            { status: 404 }
+          )
+        }
+
         if (!penaltyLevel || ![1, 2, 3].includes(penaltyLevel)) {
           return NextResponse.json(
             { error: "Valid penalty level (1, 2, or 3) is required" },
@@ -139,26 +185,30 @@ export async function POST(
         }
 
         const newScore = Math.max(0, contentOwner.score - penaltyAmount)
-        
-        let newStatus: UserStatus = "active"
-        if (newScore <= 15) {
-          newStatus = "banned"
-        } else if (newScore <= 30) {
-          newStatus = "suspended"
+        const newStatus = getStatusFromScore(contentOwner.status as UserStatus, newScore)
+
+        // Set suspendedUntil when auto-suspending via score
+        let suspendedUntil: Date | null = null
+        if (newStatus === "suspended" && contentOwner.status !== "suspended") {
+          suspendedUntil = new Date()
+          suspendedUntil.setDate(suspendedUntil.getDate() + 7) // 7 days default
         }
 
         const updatedUser = await prisma.user.update({
           where: { id: contentOwnerId },
           data: {
             score: newScore,
-            status: newStatus
+            status: newStatus,
+            ...(newStatus === "suspended" && suspendedUntil ? { suspendedUntil } : {}),
+            ...(newStatus === "banned" ? { suspendedUntil: null } : {})
           },
           select: {
             id: true,
             name: true,
             email: true,
             score: true,
-            status: true
+            status: true,
+            suspendedUntil: true
           }
         })
 
@@ -203,24 +253,33 @@ export async function POST(
           },
           { status: 200 }
         )
+      }
 
-      case "delete_content":
-        await prisma.report.updateMany({
-          where: {
-            contentId: contentId,
-            contentType: contentType as "note" | "flashcard"
-          },
-          data: {
-            status: "resolved"
-          }
-        })
-        
-        await prisma.content.delete({
-          where: {
-            id: contentId,
-            contentType: contentType as "note" | "flashcard"
-          }
-        })
+      case "delete_content": {
+        if (!contentOwnerId) {
+          return NextResponse.json(
+            { error: "Content or content owner not found" },
+            { status: 404 }
+          )
+        }
+
+        await prisma.$transaction([
+          prisma.report.updateMany({
+            where: {
+              contentId: contentId,
+              contentType: contentType as "note" | "flashcard"
+            },
+            data: {
+              status: "resolved"
+            }
+          }),
+          prisma.content.delete({
+            where: {
+              id: contentId,
+              contentType: contentType as "note" | "flashcard"
+            }
+          })
+        ])
 
         await createNotification({
           userId: contentOwnerId,
@@ -246,6 +305,7 @@ export async function POST(
           },
           { status: 200 }
         )
+      }
 
       default:
         return NextResponse.json(

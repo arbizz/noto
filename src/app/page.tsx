@@ -20,9 +20,7 @@ export default function LandingPage() {
             <Badge variant="secondary" className="rounded-2xl px-4 py-1.5 text-sm font-medium">
               Future learning platform
             </Badge>
-            <h1
-              // className="font-heading text-4xl font-bold sm:text-5xl md:text-6xl lg:text-7xl"
-            >
+            <h1>
               Record, Learn, and <span className="text-primary">Share</span> Your Knowledge.
             </h1>
             <p className="max-w-2xl leading-normal text-muted-foreground">
@@ -53,9 +51,7 @@ export default function LandingPage() {
 
         <section id="features" className="container space-y-6 bg-slate-50/50 py-8 dark:bg-transparent md:py-12 lg:py-24 mx-auto px-4">
           <div className="mx-auto flex max-w-232 flex-col items-center space-y-4 text-center">
-            <h2
-              // className="font-heading text-3xl leading-[1.1] sm:text-3xl md:text-6xl"
-            >
+            <h2>
               Key Features
             </h2>
             <p className="max-w-[85%] leading-normal text-muted-foreground">

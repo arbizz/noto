@@ -18,43 +18,10 @@ import { ReportReason, ReportStatus } from "@/generated/prisma/enums"
 import { FilterConfig, InputFilter } from "@/components/shared/InputFilter"
 import { PagePagination } from "@/components/shared/PagePagination"
 import { PaginationMeta } from "@/types/shared/pagination"
-
-type GroupedReport = {
-  contentId: number
-  contentType: "note" | "flashcard"
-  content: {
-    id: number
-    title: string
-    category: string
-    visibility: string
-    userId: number
-  } | null
-  contentOwner: {
-    id: number
-    name: string
-    email: string
-    image: string | null
-  } | null
-  totalReports: number
-  latestReportDate: Date
-  statuses: ReportStatus[]
-  reasons: Record<ReportReason, number>
-  reporters: Array<{
-    id: number
-    userId: number
-    userName: string
-    userEmail: string
-    userImage: string | null
-    reason: ReportReason
-    description: string | null
-    status: ReportStatus
-    createdAt: Date
-  }>
-  primaryStatus: ReportStatus
-}
-
-type StatusFilter = ReportStatus | "all"
-type ReasonFilter = ReportReason | "all"
+import { formatDate } from "@/lib/utils"
+import { getStatusBadgeVariant, formatReasonLabel } from "@/lib/report-utils"
+import { GroupedReport } from "@/types/admin/report"
+import { StatusFilter, ReasonFilter } from "@/types/shared/filter"
 
 export default function AdminReportsPage() {
   const router = useRouter()
@@ -63,6 +30,7 @@ export default function AdminReportsPage() {
   const [reports, setReports] = useState<GroupedReport[]>([])
   const [pagination, setPagination] = useState<PaginationMeta | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [reviewingId, setReviewingId] = useState<string | null>(null)
 
   const [status, setStatus] = useState<StatusFilter>(() => {
     return searchParams.get("status") as ReportStatus ?? "all"
@@ -92,38 +60,6 @@ export default function AdminReportsPage() {
 
     router.push(`?${params.toString()}`)
   }, [searchParams, router])
-
-  function formatDate(date: Date) {
-    return new Date(date).toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    })
-  }
-
-  function getStatusBadgeVariant(status: ReportStatus) {
-    switch (status) {
-      case "pending":
-        return "default"
-      case "reviewed":
-        return "secondary"
-      case "resolved":
-        return "outline"
-      case "rejected":
-        return "destructive"
-      default:
-        return "default"
-    }
-  }
-
-  function formatReasonLabel(reason: string) {
-    return reason
-      .split("_")
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ")
-  }
 
   function getContentIdentifier(report: GroupedReport): string {
     return `${report.contentType}-${report.contentId}`
@@ -213,6 +149,22 @@ export default function AdminReportsPage() {
       }
     }
   ]
+
+  async function handleReviewClick(identifier: string) {
+    setReviewingId(identifier)
+    try {
+      await fetch(`/api/reports/${identifier}/actions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "set_reviewed" })
+      })
+    } catch (error) {
+      console.error("Failed to set reviewed:", error)
+    } finally {
+      setReviewingId(null)
+      router.push(`/admin/reports/${identifier}`)
+    }
+  }
 
   return (
     <>
@@ -314,9 +266,10 @@ export default function AdminReportsPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => router.push(`/admin/reports/${getContentIdentifier(report)}`)}
+                        disabled={reviewingId === getContentIdentifier(report)}
+                        onClick={() => handleReviewClick(getContentIdentifier(report))}
                       >
-                        Review
+                        {reviewingId === getContentIdentifier(report) ? "Loading..." : "Review"}
                       </Button>
                     </TableCell>
                   </TableRow>

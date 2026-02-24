@@ -3,7 +3,7 @@
 
 import { use, useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, CheckCircle, Trash2, AlertTriangle } from "lucide-react"
+import { ArrowLeft, Trash2, AlertTriangle, XCircle } from "lucide-react"
 import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
@@ -31,71 +31,12 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner"
 
-import { ReportReason, ReportStatus } from "@/generated/prisma/enums"
+import { ReportStatus } from "@/generated/prisma/enums"
 import { TiptapEditor } from "@/components/user/TiptapEditor"
-
-type FlashcardData = {
-  id: string
-  question: string
-  answer: string
-}
-
-type Reporter = {
-  id: number
-  userId: number
-  user: {
-    id: number
-    name: string
-    email: string
-    image: string | null
-    score: number
-  }
-  reason: ReportReason
-  description: string | null
-  status: ReportStatus
-  createdAt: Date
-}
-
-type ReportDetail = {
-  contentId: number
-  contentType: "note" | "flashcard"
-  content: {
-    id: number
-    title: string
-    description: string | null
-    content?: any
-    flashcards?: FlashcardData[]
-    category: string
-    visibility: string
-    createdAt: Date
-    updatedAt: Date
-    userId: number
-    user: {
-      id: number
-      name: string
-      email: string
-      image: string | null
-      score: number
-      status: string
-    }
-    _count: {
-      likes: number
-      bookmarks: number
-      reports: number
-    }
-  } | null
-  totalReports: number
-  reasonCounts: Record<ReportReason, number>
-  statusCounts: Record<ReportStatus, number>
-  reports: Reporter[]
-  latestReport: Reporter
-}
-
-const PENALTY_LEVELS = {
-  1: { label: "Level 1 (Minor)", points: 10, description: "Minor violation" },
-  2: { label: "Level 2 (Moderate)", points: 15, description: "Moderate violation" },
-  3: { label: "Level 3 (Severe)", points: 25, description: "Severe violation" }
-} as const
+import { penaltyLevels } from "@/constants/admin"
+import { formatDate } from "@/lib/utils"
+import { FlashcardData, ReportDetail } from "@/types/admin/report"
+import { formatReasonLabel, getStatusBadgeVariant, getUserStatusColor } from "@/lib/report-utils"
 
 export default function AdminReportDetailPage({ 
   params 
@@ -165,40 +106,6 @@ export default function AdminReportDetailPage({
     }
   }
 
-  function formatDate(date: Date) {
-    return new Date(date).toLocaleDateString("en-EN", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    })
-  }
-
-  function formatReasonLabel(reason: string) {
-    return reason
-      .split("_")
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ")
-  }
-
-  function getStatusBadgeVariant(status: ReportStatus) {
-    switch (status) {
-      case "pending": return "default"
-      case "reviewed": return "secondary"
-      case "resolved": return "outline"
-      case "rejected": return "destructive"
-      default: return "default"
-    }
-  }
-
-  function getUserStatusColor(score: number) {
-    if (score <= 15) return "text-red-600 font-semibold"
-    if (score <= 30) return "text-orange-600 font-semibold"
-    if (score <= 50) return "text-yellow-600 font-semibold"
-    return "text-green-600 font-semibold"
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -219,6 +126,8 @@ export default function AdminReportDetailPage({
   const flashcards = content && report.contentType === "flashcard" && content.flashcards
     ? (Array.isArray(content.flashcards) ? content.flashcards : [])
     : []
+
+  const isSettled = !report.statusCounts["pending"] && !report.statusCounts["reviewed"]
 
   return (
     <div className="container mx-auto py-8 max-w-6xl">
@@ -395,7 +304,7 @@ export default function AdminReportDetailPage({
                     <div className="mt-2 flex items-center gap-3">
                       <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
                         {content.user.image ? (
-                          <div className="relative h-8 w-8"> {/* Container harus relatif jika pakai fill */}
+                          <div className="relative h-8 w-8">
                             <Image
                               src={content.user.image}
                               alt={content.user.name}
@@ -434,13 +343,13 @@ export default function AdminReportDetailPage({
             </CardHeader>
             <CardContent className="space-y-4">
               <Button
-                onClick={() => handleAction("set_reviewed")}
-                disabled={actionLoading || !content}
+                onClick={() => handleAction("set_rejected")}
+                disabled={actionLoading || isSettled}
                 variant="outline"
                 className="w-full"
               >
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Set as Reviewed
+                <XCircle className="mr-2 h-4 w-4" />
+                Reject Reports
               </Button>
 
               <Separator />
@@ -457,7 +366,7 @@ export default function AdminReportDetailPage({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {Object.entries(PENALTY_LEVELS).map(([level, data]) => (
+                        {Object.entries(penaltyLevels).map(([level, data]) => (
                           <SelectItem key={level} value={level}>
                             {data.label} (-{data.points} pts)
                           </SelectItem>
@@ -465,7 +374,7 @@ export default function AdminReportDetailPage({
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {PENALTY_LEVELS[selectedPenalty].description}
+                      {penaltyLevels[selectedPenalty].description}
                     </p>
                   </div>
 
@@ -474,10 +383,10 @@ export default function AdminReportDetailPage({
                       <Button
                         variant="destructive"
                         className="w-full"
-                        disabled={actionLoading}
+                        disabled={actionLoading || !content || isSettled}
                       >
                         <AlertTriangle className="mr-2 h-4 w-4" />
-                        Reduce Score (-{PENALTY_LEVELS[selectedPenalty].points} pts)
+                        Reduce Score (-{penaltyLevels[selectedPenalty].points} pts)
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
@@ -485,10 +394,10 @@ export default function AdminReportDetailPage({
                         <AlertDialogTitle>Apply Penalty?</AlertDialogTitle>
                         <AlertDialogDescription>
                           This will reduce <strong>{content.user.name}</strong>&apos;s score by{" "}
-                          <strong>{PENALTY_LEVELS[selectedPenalty].points} points</strong> ({PENALTY_LEVELS[selectedPenalty].label}).
+                          <strong>{penaltyLevels[selectedPenalty].points} points</strong> ({penaltyLevels[selectedPenalty].label}).
                           <br /><br />
                           Current score: <strong>{content.user.score}</strong><br />
-                          New score: <strong>{Math.max(0, content.user.score - PENALTY_LEVELS[selectedPenalty].points)}</strong>
+                          New score: <strong>{Math.max(0, content.user.score - penaltyLevels[selectedPenalty].points)}</strong>
                           <br /><br />
                           All reports for this content will be marked as resolved.
                         </AlertDialogDescription>
@@ -512,7 +421,7 @@ export default function AdminReportDetailPage({
                       <Button
                         variant="destructive"
                         className="w-full"
-                        disabled={actionLoading}
+                        disabled={actionLoading || !content || isSettled}
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete {report.contentType === "note" ? "Note" : "Flashcard Set"}

@@ -25,20 +25,32 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async signIn({ user }) {
       const existingUser = await prisma.user.findUnique({
         where: { email: user.email! },
-        select: { status: true }
+        select: { status: true, suspendedUntil: true }
       })
 
-      if (existingUser && existingUser.status !== "active") {
-        return false
+      if (!existingUser) return true
+
+      // Auto-activate expired suspensions at login time
+      if (
+        existingUser.status === "suspended" &&
+        existingUser.suspendedUntil &&
+        new Date(existingUser.suspendedUntil) <= new Date()
+      ) {
+        await prisma.user.update({
+          where: { email: user.email! },
+          data: { status: "active", suspendedUntil: null }
+        })
       }
 
+      // Allow all users to sign in — middleware will redirect
+      // banned users to /banned and suspended users to /suspended
       return true
     },
     async jwt({ token, user }) {
       if (user) {
         const dbUser = await prisma.user.findUnique({
           where: { email: user.email! },
-          select: { id: true, role: true, name: true }
+          select: { id: true, role: true, name: true, status: true }
         })
 
         const isAdminEmail = user.email === process.env.ADMIN_EMAIL
@@ -56,6 +68,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         token.id = dbUser?.id || user.id
         token.name = dbUser?.name || user.name
+        token.status = dbUser?.status || "active"
       }
       return token
     },
@@ -64,6 +77,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.id = token.id as string
         session.user.role = token.role as UserRole
         session.user.name = token.name as string
+        session.user.status = token.status as string
       }
       return session
     }
