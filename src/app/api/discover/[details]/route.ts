@@ -22,7 +22,7 @@ export async function GET(
 
     // Parse details format: "note-123" or "flashcard-456"
     const match = details.match(/^(note|flashcard)-(\d+)$/)
-    
+
     if (!match) {
       console.log("Invalid details format:", details)
       return NextResponse.json(
@@ -76,9 +76,9 @@ export async function GET(
     // Verify content type matches (note that prisma enum might be different)
     const dbContentType = content.contentType.toLowerCase()
     const requestedType = contentType === "flashcard" ? "flashcard" : "note"
-    
+
     console.log("Type check:", { dbContentType, requestedType })
-    
+
     if (dbContentType !== requestedType) {
       return NextResponse.json(
         { error: "Content type mismatch" },
@@ -94,30 +94,28 @@ export async function GET(
       )
     }
 
-    // Fetch user interactions
-    const [bookmark, like, report] = await Promise.all([
+    // Fetch user interactions + follow status
+    const isOwnContent = content.userId === userId
+    const [bookmark, like, report, followRecord] = await Promise.all([
       prisma.bookmark.findUnique({
-        where: {
-          userId_contentId: {
-            userId,
-            contentId
-          }
-        }
+        where: { userId_contentId: { userId, contentId } }
       }),
       prisma.like.findUnique({
-        where: {
-          userId_contentId: {
-            userId,
-            contentId
-          }
-        }
+        where: { userId_contentId: { userId, contentId } }
       }),
       prisma.report.findFirst({
-        where: {
-          userId,
-          contentId
-        }
-      })
+        where: { userId, contentId }
+      }),
+      !isOwnContent
+        ? prisma.follow.findUnique({
+          where: {
+            followerId_followingId: {
+              followerId: userId,
+              followingId: content.userId
+            }
+          }
+        })
+        : Promise.resolve(null)
     ])
 
     const contentWithFlags = {
@@ -128,7 +126,11 @@ export async function GET(
     }
 
     return NextResponse.json(
-      { content: contentWithFlags },
+      {
+        content: contentWithFlags,
+        isOwnContent,
+        isFollowing: !!followRecord
+      },
       { status: 200 }
     )
   } catch (err) {

@@ -95,7 +95,7 @@ export default function LandingPage() {
                 <Sparkles className="h-10 w-10 text-primary mb-2" />
                 <CardTitle className="font-heading">Reputation System</CardTitle>
                 <CardDescription>
-                  Earn scores and badges for quality contributions. Become a top contributor in the community.
+                  We keep score to measure your habit in the community.
                 </CardDescription>
               </CardHeader>
             </Card>

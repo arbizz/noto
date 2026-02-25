@@ -10,10 +10,11 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
 import { ReportDialog } from "@/components/user/ReportDialog"
-import { 
-  ArrowLeft, 
-  Bookmark, 
-  Heart, 
+import { FollowButton } from "@/components/user/FollowButton"
+import {
+  ArrowLeft,
+  Bookmark,
+  Heart,
   Flag,
   BookmarkCheck,
   Calendar,
@@ -47,6 +48,8 @@ export default function DiscoverDetailPage() {
   const [flashcards, setFlashcards] = useState<Flashcard[]>([])
   const [note, setNote] = useState<JSONContent>({})
   const [isLoading, setIsLoading] = useState(true)
+  const [isFollowing, setIsFollowing] = useState(false)
+  const [isOwnContent, setIsOwnContent] = useState(false)
   const [reportDialog, setReportDialog] = useState<ReportDialogState>({
     open: false,
     contentId: null,
@@ -63,11 +66,11 @@ export default function DiscoverDetailPage() {
       setIsLoading(true)
       try {
         console.log("Fetching content for details:", details)
-        
+
         const res = await fetch(`/api/discover/${details}`)
-        
+
         console.log("Response status:", res.status)
-        
+
         if (!res.ok) {
           const errorData = await res.json()
           console.error("API Error:", errorData)
@@ -76,7 +79,7 @@ export default function DiscoverDetailPage() {
 
         const data = await res.json()
         console.log("Content data received:", data)
-        
+
         setContent(data.content)
         const { content: contentData } = data.content
 
@@ -85,10 +88,14 @@ export default function DiscoverDetailPage() {
         } else {
           setNote(contentData as JSONContent)
         }
+
+        // Set follow status and ownership from API response
+        setIsFollowing(data.isFollowing ?? false)
+        setIsOwnContent(data.isOwnContent ?? false)
       } catch (error) {
         console.error("Error fetching content:", error)
         toast.error(error instanceof Error ? error.message : "Failed to load content")
-        
+
         // Add small delay before redirecting to show the error toast
         setTimeout(() => {
           router.push("/discover")
@@ -165,16 +172,16 @@ export default function DiscoverDetailPage() {
       }
 
       const data = await res.json()
-      setContent(prev => 
-        prev 
-          ? { 
-              ...prev, 
-              isLiked: data.isLiked,
-              _count: {
-                ...prev._count,
-                likes: prev._count.likes + (data.isLiked ? 1 : -1)
-              }
-            } 
+      setContent(prev =>
+        prev
+          ? {
+            ...prev,
+            isLiked: data.isLiked,
+            _count: {
+              ...prev._count,
+              likes: prev._count.likes + (data.isLiked ? 1 : -1)
+            }
+          }
           : null
       )
 
@@ -312,15 +319,26 @@ export default function DiscoverDetailPage() {
           </div>
 
           <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push(`/user/${content.user.id}`)}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            >
               <Avatar className="h-8 w-8">
                 <AvatarImage src={content.user.image || undefined} />
                 <AvatarFallback>
                   <UserIcon className="h-4 w-4" />
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium">{content.user.name}</span>
-            </div>
+              <span className="text-sm font-medium hover:underline">{content.user.name}</span>
+            </button>
+            {!isOwnContent && (
+              <FollowButton
+                userId={content.user.id}
+                initialIsFollowing={isFollowing}
+                onToggle={setIsFollowing}
+                size="sm"
+              />
+            )}
 
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4" />
@@ -347,8 +365,8 @@ export default function DiscoverDetailPage() {
                 onClick={handleToggleLike}
                 className={content.isLiked ? "hover:bg-red-600 bg-red-600 text-white hover:text-white" : ""}
               >
-                <Heart 
-                  className={`h-4 w-4 mr-2 ${content.isLiked ? "fill-current" : ""}`} 
+                <Heart
+                  className={`h-4 w-4 mr-2 ${content.isLiked ? "fill-current" : ""}`}
                 />
                 {content._count.likes}
               </Button>
@@ -374,18 +392,18 @@ export default function DiscoverDetailPage() {
               <p className="text-sm text-muted-foreground">Content Type: Note</p>
               <TiptapEditor
                 content={note}
-                onChange={() => {}}
+                onChange={() => { }}
                 readonly
               />
             </div>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-6">
-            <div 
+            <div
               className="w-full max-w-2xl h-80 cursor-pointer"
               onClick={() => setIsFlipped(!isFlipped)}
             >
-              <Card 
+              <Card
                 className={cn(
                   "h-full w-full flex items-center justify-center transition-colors duration-200 hover:bg-muted/30 border-2",
                   isFlipped ? "border-primary/50 bg-muted/10" : "border-border"
@@ -395,8 +413,8 @@ export default function DiscoverDetailPage() {
                   <div className="flex flex-col items-center gap-4">
                     <span className={cn(
                       "px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider",
-                      isFlipped 
-                        ? "bg-primary/10 text-primary" 
+                      isFlipped
+                        ? "bg-primary/10 text-primary"
                         : "bg-muted text-muted-foreground"
                     )}>
                       {isFlipped ? "Answer / Back" : "Question / Front"}

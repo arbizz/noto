@@ -5,7 +5,7 @@ import { checkScoreRecovery } from "@/lib/score-recovery"
 
 const publicRoutes = ["/", "/login", "/register"]
 const statusPages = ["/banned", "/suspended"]
-const userRoutes = ["/dashboard", "/flashcards", "/notes", "/discover", "/bookmarks", "/settings"]
+const userRoutes = ["/dashboard", "/flashcards", "/notes", "/discover", "/bookmarks", "/settings", "/following", "/user"]
 const adminRoutes = ["/admin"]
 
 export const runtime = "nodejs"
@@ -110,6 +110,8 @@ export const config = {
     "/bookmarks/:path*",
     "/notes/:path*",
     "/settings/:path*",
+    "/following/:path*",
+    "/user/:path*",
     "/admin/:path*",
   ],
 }

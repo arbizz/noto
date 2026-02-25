@@ -4,7 +4,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useState } from "react"
 import { Button } from "../ui/button"
-import { LucideBookmark, LucideGlobe, LucideHome, LucideLayers, LucideLogOut, LucidePanelLeft, LucideSettings, LucideStickyNote, LucideUser } from "lucide-react"
+import { LucideBookmark, LucideGlobe, LucideHome, LucideLayers, LucideLogOut, LucidePanelLeft, LucideSettings, LucideStickyNote, LucideUser, LucideUsers } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { usePathname } from "next/navigation"
 import { Separator } from "../ui/separator"
@@ -48,6 +48,9 @@ function UserSidebar() {
             </SidebarLink>
             <SidebarLink href="/bookmarks" label="Bookmarks">
               <LucideBookmark size={24} className="size-fit" />
+            </SidebarLink>
+            <SidebarLink href="/following" label="Following">
+              <LucideUsers size={24} className="size-fit" />
             </SidebarLink>
             <SidebarLink href="/profile" label="Profile">
               <LucideUser size={24} className="size-fit" />
