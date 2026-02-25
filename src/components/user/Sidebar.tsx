@@ -49,7 +49,7 @@ function UserSidebar() {
             <SidebarLink href="/bookmarks" label="Bookmarks">
               <LucideBookmark size={24} className="size-fit" />
             </SidebarLink>
-            <SidebarLink href="/profile" label="Settings">
+            <SidebarLink href="/profile" label="Profile">
               <LucideUser size={24} className="size-fit" />
             </SidebarLink>
           </nav>

@@ -288,7 +288,7 @@ export default function AdminUserDetailPage() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleAction("suspend")}>
+                          <AlertDialogAction onClick={() => handleAction("suspend")} variant="destructive">
                             Suspend
                           </AlertDialogAction>
                         </AlertDialogFooter>
@@ -321,6 +321,7 @@ export default function AdminUserDetailPage() {
                           <AlertDialogAction
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             onClick={() => handleAction("ban")}
+                            variant="destructive"
                           >
                             Ban
                           </AlertDialogAction>
