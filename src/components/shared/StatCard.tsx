@@ -29,14 +29,14 @@ export function StatCard({
 }: StatCardProps) {
   const content = (
     <Card className={href ? "hover:shadow-md transition-shadow cursor-pointer" : ""}>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-2 pt-5 px-5">
         <div className="flex items-center justify-between">
           <div className={`p-2 ${variantBgColors[variant]} rounded-lg`}>
             {icon}
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-5 pb-5">
         <div className="text-2xl font-bold">
           {loading ? "..." : value}
         </div>

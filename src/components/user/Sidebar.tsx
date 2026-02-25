@@ -4,7 +4,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useState } from "react"
 import { Button } from "../ui/button"
-import { LucideBookmark, LucideGlobe, LucideHome, LucideLayers, LucideLogOut, LucidePanelLeft, LucideStickyNote } from "lucide-react"
+import { LucideBookmark, LucideGlobe, LucideHome, LucideLayers, LucideLogOut, LucidePanelLeft, LucideSettings, LucideStickyNote, LucideUser } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { usePathname } from "next/navigation"
 import { Separator } from "../ui/separator"
@@ -17,7 +17,7 @@ function UserSidebar() {
       <aside className={`${isOpen ? "w-64" : "w-16"} sticky top-0 flex flex-col justify-between h-screen bg-sidebar ring ring-sidebar-ring transition-all duration-200 ease-linear`}>
         <div>
           <div className="relative h-16">
-            <Link 
+            <Link
               href="/dashboard"
               className="absolute top-3 left-3 p-2 size-fit rounded-sm hover:bg-sidebar-accent"
             >
@@ -49,12 +49,15 @@ function UserSidebar() {
             <SidebarLink href="/bookmarks" label="Bookmarks">
               <LucideBookmark size={24} className="size-fit" />
             </SidebarLink>
+            <SidebarLink href="/profile" label="Settings">
+              <LucideUser size={24} className="size-fit" />
+            </SidebarLink>
           </nav>
         </div>
         <div className="p-3">
           <Button variant="destructive" size="icon" onClick={() => signOut()} className="flex items-center justify-start gap-2 h-fit w-full">
             <span className="p-2">
-              <LucideLogOut size={24} className="size-fit"/>
+              <LucideLogOut size={24} className="size-fit" />
             </span>
             <p className="overflow-x-hidden">Sign out</p>
           </Button>

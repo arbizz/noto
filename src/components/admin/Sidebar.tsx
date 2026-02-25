@@ -4,7 +4,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useState } from "react"
 import { Button } from "../ui/button"
-import { LucideAlertTriangle, LucideHome, LucideLogOut, LucidePanelLeft, LucideSquare, LucideUser } from "lucide-react"
+import { LucideAlertTriangle, LucideHome, LucideLogOut, LucidePanelLeft, LucideSquare, LucideUser, LucideUsers } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { usePathname } from "next/navigation"
 import { Separator } from "../ui/separator"
@@ -41,7 +41,7 @@ function AdminSidebar() {
               <LucideAlertTriangle size={24} className="size-fit" />
             </SidebarLink>
             <SidebarLink href="/admin/users" label="Users">
-              <LucideUser size={24} className="size-fit" />
+              <LucideUsers size={24} className="size-fit" />
             </SidebarLink>
           </nav>
         </div>

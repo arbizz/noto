@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -281,75 +282,76 @@ export default function AdminUsersPage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <div className="rounded-xl border bg-card shadow-sm">
-          {isLoading ? (
-            <div className="p-8 text-center text-muted-foreground">Loading users...</div>
-          ) : users.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">No users found</div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Score</TableHead>
-                  <TableHead>Contents</TableHead>
-                  <TableHead>Reports</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{user.name ?? "(no name)"}</span>
-                        <span className="text-xs text-muted-foreground">{user.email}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={user.role === "admin" ? "default" : "outline"} className="capitalize">
-                        {user.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusBadgeVariant(user.status)} className="capitalize">
-                        {user.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span className={`font-mono font-semibold ${
-                        user.score <= 15
+        <Card className="overflow-hidden p-0">
+          <CardContent className="p-0">
+            {isLoading ? (
+              <div className="p-8 text-center text-muted-foreground">Loading users...</div>
+            ) : users.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground">No users found</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Score</TableHead>
+                    <TableHead>Contents</TableHead>
+                    <TableHead>Reports</TableHead>
+                    <TableHead>Joined</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{user.name ?? "(no name)"}</span>
+                          <span className="text-xs text-muted-foreground">{user.email}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={user.role === "admin" ? "default" : "outline"} className="capitalize">
+                          {user.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusBadgeVariant(user.status)} className="capitalize">
+                          {user.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`font-mono font-semibold ${user.score <= 15
                           ? "text-destructive"
                           : user.score <= 30
-                          ? "text-yellow-500"
-                          : "text-green-600"
-                      }`}>
-                        {user.score}
-                      </span>
-                    </TableCell>
-                    <TableCell>{user._count.contents}</TableCell>
-                    <TableCell>{user._count.reports}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {formatDate(user.createdAt)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => router.push(`/admin/users/${user.id}`)}
-                      >
-                        View
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </div>
+                            ? "text-yellow-500"
+                            : "text-green-600"
+                          }`}>
+                          {user.score}
+                        </span>
+                      </TableCell>
+                      <TableCell>{user._count.contents}</TableCell>
+                      <TableCell>{user._count.reports}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {formatDate(user.createdAt)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => router.push(`/admin/users/${user.id}`)}
+                        >
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
       </section>
 
       <section className="mt-10 flex justify-center">

@@ -140,8 +140,8 @@ export default function FlashcardsPage() {
   return (
     <>
       <section className="mb-6 flex flex-col gap-1">
-        <h1>Flashcards</h1>
-        <p>Lorem ipsum dolor sit amet consectetur.</p>
+        <h1 className="text-3xl font-bold">Flashcards</h1>
+        <p className="text-muted-foreground">Browse and manage all your flashcard sets.</p>
       </section>
 
       <section className="mb-8 flex flex-col gap-6 rounded-xl border bg-card p-6 shadow-sm">

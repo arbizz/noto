@@ -54,7 +54,7 @@ export default function BookmarksPage() {
     const value = searchParams.get("order")
     return value === "asc" ? "asc" : "desc"
   })
-  
+
   const [type, setType] = useState<"note" | "card">(() => {
     const typeParam = searchParams.get("type")
     return typeParam === "card" ? "card" : "note"
@@ -146,14 +146,14 @@ export default function BookmarksPage() {
         setNotes(prev =>
           prev.map(note =>
             note.id === contentId
-              ? { 
-                  ...note, 
-                  isLiked: data.isLiked,
-                  _count: {
-                    ...note._count,
-                    likes: note._count.likes + (data.isLiked ? 1 : -1)
-                  }
+              ? {
+                ...note,
+                isLiked: data.isLiked,
+                _count: {
+                  ...note._count,
+                  likes: note._count.likes + (data.isLiked ? 1 : -1)
                 }
+              }
               : note
           )
         )
@@ -161,14 +161,14 @@ export default function BookmarksPage() {
         setFlashcards(prev =>
           prev.map(flashcard =>
             flashcard.id === contentId
-              ? { 
-                  ...flashcard, 
-                  isLiked: data.isLiked,
-                  _count: {
-                    ...flashcard._count,
-                    likes: flashcard._count.likes + (data.isLiked ? 1 : -1)
-                  }
+              ? {
+                ...flashcard,
+                isLiked: data.isLiked,
+                _count: {
+                  ...flashcard._count,
+                  likes: flashcard._count.likes + (data.isLiked ? 1 : -1)
                 }
+              }
               : flashcard
           )
         )
@@ -281,7 +281,7 @@ export default function BookmarksPage() {
         }
 
         const data = await res.json()
-        
+
         const {
           notes,
           flashcards,
@@ -323,7 +323,7 @@ export default function BookmarksPage() {
           handleUpdateQuery({ page: "1" })
           return
         }
-        
+
         setNotes(notes)
         setFlashcards(flashcards)
         setNPagination(pagination.npagination)
@@ -377,13 +377,13 @@ export default function BookmarksPage() {
   return (
     <>
       <section className="mb-6 flex flex-col gap-1">
-        <h1>Bookmarks</h1>
-        <p>Your saved notes and flashcards</p>
+        <h1 className="text-3xl font-bold">Bookmarks</h1>
+        <p className="text-muted-foreground">Your saved notes and flashcards.</p>
       </section>
 
       <section className="mb-8 flex flex-col gap-6 rounded-xl border bg-card p-6 shadow-sm">
-        <Tabs 
-          value={type} 
+        <Tabs
+          value={type}
           onValueChange={(value) => {
             const v = value as "note" | "card"
             setType(v)
@@ -414,9 +414,9 @@ export default function BookmarksPage() {
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 w-full">
                 {notes.map((n) => (
-                  <NFCard 
-                    key={n.id} 
-                    content={n} 
+                  <NFCard
+                    key={n.id}
+                    content={n}
                     onClick={() => router.push(`/discover/note-${n.id}`)}
                     onBookmark={(e) => handleToggleBookmark(n.id, "note", e)}
                     onLike={(e) => handleToggleLike(n.id, "note", e)}
@@ -440,9 +440,9 @@ export default function BookmarksPage() {
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 w-full">
                 {flashcards.map((f) => (
-                  <NFCard 
-                    key={f.id} 
-                    content={f} 
+                  <NFCard
+                    key={f.id}
+                    content={f}
                     onClick={() => router.push(`/discover/flashcard-${f.id}`)}
                     onBookmark={(e) => handleToggleBookmark(f.id, "flashcard", e)}
                     onLike={(e) => handleToggleLike(f.id, "flashcard", e)}

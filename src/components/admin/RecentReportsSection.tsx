@@ -47,7 +47,7 @@ export function RecentReportsSection({ reports, loading }: RecentReportsSectionP
           <Link href="/admin/reports">View All</Link>
         </Button>
       </div>
-      <Card>
+      <Card className="overflow-hidden p-0">
         <CardContent className="p-0">
           {loading ? (
             <div className="p-8 text-center text-muted-foreground">Loading...</div>

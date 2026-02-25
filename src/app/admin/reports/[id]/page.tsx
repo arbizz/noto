@@ -38,10 +38,10 @@ import { formatDate } from "@/lib/utils"
 import { FlashcardData, ReportDetail } from "@/types/admin/report"
 import { formatReasonLabel, getStatusBadgeVariant, getUserStatusColor } from "@/lib/report-utils"
 
-export default function AdminReportDetailPage({ 
-  params 
-}: { 
-  params: Promise<{ id: string }> 
+export default function AdminReportDetailPage({
+  params
+}: {
+  params: Promise<{ id: string }>
 }) {
   const resolvedParams = use(params)
   const router = useRouter()
@@ -55,7 +55,7 @@ export default function AdminReportDetailPage({
     try {
       const res = await fetch(`/api/reports/${resolvedParams.id}`)
       if (!res.ok) throw new Error("Failed to fetch report")
-      
+
       const data = await res.json()
       setReport(data)
     } catch (error) {
@@ -85,7 +85,7 @@ export default function AdminReportDetailPage({
       if (!res.ok) throw new Error("Action failed")
 
       const data = await res.json()
-      
+
       if (action === "delete_content") {
         toast.success(data.message)
         setTimeout(() => router.push("/admin/reports"), 1000)
@@ -275,7 +275,7 @@ export default function AdminReportDetailPage({
                       <Label className="text-sm font-semibold">Content Preview</Label>
                       <TiptapEditor
                         content={content.content}
-                        onChange={() => {}}
+                        onChange={() => { }}
                         readonly
                       />
                     </div>
@@ -421,7 +421,7 @@ export default function AdminReportDetailPage({
                       <Button
                         variant="destructive"
                         className="w-full"
-                        disabled={actionLoading || !content || isSettled}
+                        disabled={actionLoading || !content}
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete {report.contentType === "note" ? "Note" : "Flashcard Set"}

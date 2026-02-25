@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
@@ -185,99 +186,101 @@ export default function AdminReportsPage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <div className="rounded-xl border bg-card shadow-sm">
-          {isLoading ? (
-            <div className="p-8 text-center text-muted-foreground">
-              Loading reports...
-            </div>
-          ) : reports.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">
-              No reports found
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Content</TableHead>
-                  <TableHead>Owner</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Reports</TableHead>
-                  <TableHead>Reasons</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Latest Report</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {reports.map((report) => (
-                  <TableRow key={getContentIdentifier(report)}>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">
-                          {report.content?.title || "Content Deleted"}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          ID: {report.contentId}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {report.contentOwner ? (
+        <Card className="overflow-hidden p-0">
+          <CardContent className="p-0">
+            {isLoading ? (
+              <div className="p-8 text-center text-muted-foreground">
+                Loading reports...
+              </div>
+            ) : reports.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground">
+                No reports found
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Content</TableHead>
+                    <TableHead>Owner</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Reports</TableHead>
+                    <TableHead>Reasons</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Latest Report</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {reports.map((report) => (
+                    <TableRow key={getContentIdentifier(report)}>
+                      <TableCell>
                         <div className="flex flex-col">
                           <span className="font-medium">
-                            {report.contentOwner.name}
+                            {report.content?.title || "Content Deleted"}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {report.contentOwner.email}
+                            ID: {report.contentId}
                           </span>
                         </div>
-                      ) : (
-                        <span className="text-muted-foreground">N/A</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="capitalize">
-                        {report.contentType}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">
-                        {report.totalReports} {report.totalReports === 1 ? "report" : "reports"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {Object.entries(report.reasons).map(([reason, count]) => (
-                          <Badge key={reason} variant="outline" className="text-xs">
-                            {formatReasonLabel(reason)}: {count}
-                          </Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusBadgeVariant(report.primaryStatus)}>
-                        {report.primaryStatus}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {formatDate(report.latestReportDate)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled={reviewingId === getContentIdentifier(report)}
-                        onClick={() => handleReviewClick(getContentIdentifier(report))}
-                      >
-                        {reviewingId === getContentIdentifier(report) ? "Loading..." : "Review"}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </div>
+                      </TableCell>
+                      <TableCell>
+                        {report.contentOwner ? (
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {report.contentOwner.name}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {report.contentOwner.email}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">N/A</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="capitalize">
+                          {report.contentType}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {report.totalReports} {report.totalReports === 1 ? "report" : "reports"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {Object.entries(report.reasons).map(([reason, count]) => (
+                            <Badge key={reason} variant="outline" className="text-xs">
+                              {formatReasonLabel(reason)}: {count}
+                            </Badge>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusBadgeVariant(report.primaryStatus)}>
+                          {report.primaryStatus}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {formatDate(report.latestReportDate)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={reviewingId === getContentIdentifier(report)}
+                          onClick={() => handleReviewClick(getContentIdentifier(report))}
+                        >
+                          {reviewingId === getContentIdentifier(report) ? "Loading..." : "Review"}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
       </section>
 
       <section className="mt-10 flex justify-center">
