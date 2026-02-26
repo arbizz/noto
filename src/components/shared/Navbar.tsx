@@ -7,10 +7,10 @@ function Navbar() {
     <nav className="flex justify-between items-center p-6">
       <Link href="/" className="flex items-center gap-4">
         <Image
-          src="/placeholder.svg"
+          src="/logo.png"
           alt="Noto logo"
           width={32}
-          height={32} 
+          height={32}
         />
         <span className="font-semibold">
           Noto

@@ -17,11 +17,11 @@ function AdminSidebar() {
       <aside className={`${isOpen ? "w-64" : "w-16"} sticky top-0 flex flex-col justify-between h-screen bg-sidebar ring ring-sidebar-ring transition-all duration-200 ease-linear`}>
         <div>
           <div className="relative h-16">
-            <Link 
+            <Link
               href="/admin/dashboard"
               className="absolute top-3 left-3 p-2 size-fit rounded-sm hover:bg-sidebar-accent"
             >
-              <Image src="/placeholder.svg" alt="Noto logo" width={24} height={24} />
+              <Image src="/logo.png" alt="Noto logo" width={24} height={24} />
             </Link>
             <Button
               variant="ghost"
@@ -48,7 +48,7 @@ function AdminSidebar() {
         <div className="p-3">
           <Button variant="destructive" size="icon" onClick={() => signOut()} className="flex items-center justify-start gap-2 h-fit w-full">
             <span className="p-2">
-              <LucideLogOut size={24} className="size-fit"/>
+              <LucideLogOut size={24} className="size-fit" />
             </span>
             <p className="overflow-x-hidden">Sign out</p>
           </Button>
