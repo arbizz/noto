@@ -19,35 +19,54 @@ export default function NewNotePage() {
   const [description, setDescription] = useState("")
   const [category, setCategory] = useState<ContentCategory>("other")
   const [visibility, setVisibility] = useState<Visibility>("private")
+  const [saving, setSaving] = useState(false)
 
   async function handleCreate() {
     const contentText = JSON.stringify(content)
     const hasText = /[a-zA-Z0-9]/.test(contentText)
-    
+
+    if (!title.trim()) {
+      toast.error("Title is required")
+      return
+    }
+
     if (!hasText) {
       toast.error("Content must contain at least one character")
       return
     }
 
-    const res = await fetch("/api/notes", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        title,
-        description,
-        content,
-        category,
-        visibility,
-      }),
-    })
+    setSaving(true)
+    try {
+      const res = await fetch("/api/notes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          content,
+          category,
+          visibility,
+        }),
+      })
 
-    const { id: noteId } = await res.json()
+      const data = await res.json()
 
-    if (noteId) {
-      toast.success("Note created successfully")
-      router.push(`/notes/${noteId}`)
+      if (!res.ok) {
+        toast.error(data.error || "Failed to create note")
+        return
+      }
+
+      if (data.id) {
+        toast.success("Note created successfully")
+        router.push(`/notes/${data.id}`)
+      }
+    } catch (error) {
+      console.error("Save error:", error)
+      toast.error("Failed to save note. Please try again.")
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -89,9 +108,9 @@ export default function NewNotePage() {
         />
 
         <div>
-          <Button onClick={handleCreate} className="w-full">
-            Save
-          </Button>  
+          <Button onClick={handleCreate} className="w-full" disabled={saving}>
+            {saving ? "Saving..." : "Save"}
+          </Button>
         </div>
       </section>
     </>
